@@ -1,0 +1,24 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.h
+config.h.in
+config.log
+config.status
+configure
+stamp-h1
