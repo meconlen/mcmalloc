@@ -1,14 +1,15 @@
 #include <config.h>
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>      // XintY_t
-#include <stddef.h>     // NULL
-#include <string.h>        // strlen()
-#include <unistd.h>     // brk(), sbrk()
+#include <inttypes.h>		// XintY_t
+#include <stddef.h>			// NULL
+#include <stdio.h> 			// STDERR
+#include <string.h>			// strlen()
+#include <unistd.h>			// brk(), sbrk()
 
-#include <sys/mman.h>      // mmap()
-#include <sys/resource.h>  // getrusage()
-#include <sys/time.h>      // getrusage()
-#include <sys/types.h>     // size_t
+#include <sys/mman.h>		// mmap()
+#include <sys/resource.h>	// getrusage()
+#include <sys/time.h>		// getrusage()
+#include <sys/types.h>		// size_t
 
 // for getting vsize
 #if defined(__APPLE__)
@@ -31,13 +32,30 @@ mc_kr_Header mc_kr_base;
 mc_kr_Header *mc_kr_freep = NULL;
 
 // malloc stats
-static mallstats mc_kr_mallstats = {0, 0, 0};
+static mallstats mc_kr_mallstats = {0, 0, 0, 0};
 
 mallstats mc_kr_getmallstats(void)
 {
 	return mc_kr_mallstats;
 }
 
+void mc_kr_malloc_stats(void)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Memory allocation\n");
+	fprintf(stderr, "\t allocated blocks \t%lu\n", mc_kr_mallstats.allocationCount);
+	fprintf(stderr, "\t memory allocated \t%lu\n", mc_kr_mallstats.memoryAllocated);
+	fprintf(stderr, "\t overhead allocated \t%lu\n", mc_kr_mallstats.allocationCount * sizeof(mc_kr_Header));
+	fprintf(stderr, "\t space allocated \t%lu\n", mc_kr_mallstats.allocatedSpace);
+	fprintf(stderr, "\t heap allocated \t%lu\n", mc_kr_mallstats.heapAllocated);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "\t internal fragmentation = %f\n", ((double)mc_kr_mallstats.allocatedSpace - mc_kr_mallstats.memoryAllocated) / mc_kr_mallstats.allocatedSpace);
+	// (heap - (allocated space + overhead)) / heap
+	fprintf(stderr, "\t external fragmentation = %f\n", 
+			((double)mc_kr_mallstats.heapAllocated - (mc_kr_mallstats.allocatedSpace + mc_kr_mallstats.allocationCount * sizeof(mc_kr_Header))) / mc_kr_mallstats.heapAllocated);
+	fprintf(stderr, "\t overhead = %f\n", (double)mc_kr_mallstats.allocationCount * sizeof(mc_kr_Header) / mc_kr_mallstats.heapAllocated);
+	fprintf(stderr, "\t total loss = %f\n", ((double)mc_kr_mallstats.heapAllocated - mc_kr_mallstats.memoryAllocated) / mc_kr_mallstats.heapAllocated);
+}
 
 // This releases the memory in the free list. 
 // All memory should be returned to the free list first
@@ -63,6 +81,7 @@ void mc_kr_releaseFreeList(void)
 	mc_kr_base.s.size = 0;
 	mc_kr_freep = NULL;
 	// reset the stats
+	mc_kr_mallstats.allocationCount = 0;
 	mc_kr_mallstats.memoryAllocated = 0;
 	mc_kr_mallstats.heapAllocated = 0;
 	mc_kr_mallstats.allocatedSpace = 0;
@@ -79,6 +98,8 @@ void mc_kr_PrintFreelist(void)
 		current = current->s.ptr;
 	} while(current != &mc_kr_base);
 }
+
+// mc_kr_morecore()
 
 inline static mc_kr_Header *mc_kr_morecore(unsigned nu)
 {
@@ -97,11 +118,14 @@ inline static mc_kr_Header *mc_kr_morecore(unsigned nu)
 	// so free can deincrement properly 
 	mc_kr_mallstats.heapAllocated += nu * sizeof(mc_kr_Header);
 	mc_kr_mallstats.memoryAllocated += (nu-1)*sizeof(mc_kr_Header);
-	mc_kr_mallstats.allocatedSpace += up->s.bytes;
+	mc_kr_mallstats.allocatedSpace += (nu-1) * sizeof(mc_kr_Header);
+	mc_kr_mallstats.allocationCount++;
 	// This will place the useful space onto the free list
 	mc_kr_free((void *)(up+1));
 	return mc_kr_freep; 
 }
+
+// mc_kr_calloc()
 
 void *mc_kr_calloc(size_t count, size_t size)
 {
@@ -135,16 +159,15 @@ void *mc_kr_malloc(size_t nbytes)
 				p->s.size -= nunits;		// fix the size of the remainder 
 				p += p->s.size;			// go to the slized out block 
 				p->s.size = nunits;		// fix the size of the new block
-				p->s.bytes += nbytes; 	// fix the bytes of the new block
+				p->s.bytes = nbytes; 	// fix the bytes of the new block
 			}
 			// p now points where we want 
 			mc_kr_freep = prevp;    // looks like we are doing next fit
 			// update the mallstats
 			mc_kr_mallstats.memoryAllocated += p->s.bytes;
-// printf("allocatedSpace = %ld\n", mc_kr_mallstats.allocatedSpace);
-// printf("p->s.size = %ld\n", p->s.size);
-// printf("sizeof(mc_kr_Header = %ld\n", sizeof(mc_kr_Header));
-			mc_kr_mallstats.allocatedSpace += (p->s.size - 1) * sizeof(mc_kr_Header); // size of block in bytes - header
+			// size of block in bytes (not including header)
+			mc_kr_mallstats.allocatedSpace += (p->s.size - 1) * sizeof(mc_kr_Header); 
+			mc_kr_mallstats.allocationCount++;
 			return (void *)(p+1); // return the space after the header
 		} 
 		if(p == mc_kr_freep) { // we wrapped around the list
@@ -204,6 +227,7 @@ void mc_kr_free(void *ap)
 	// update the mallstats
 	mc_kr_mallstats.memoryAllocated -= bp->s.bytes;
 	mc_kr_mallstats.allocatedSpace -= (bp->s.size - 1) * sizeof(mc_kr_Header); // size of block in bytes - header
+	mc_kr_mallstats.allocationCount--;
 
 	// loop through the free list while bp is not between p and p->s.ptr (next p)
 	for(p = mc_kr_freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr) 

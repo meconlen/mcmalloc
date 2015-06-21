@@ -60,6 +60,7 @@ extern mc_kr_Header *mc_kr_freep;
 void *mc_kr_calloc(size_t count, size_t size);
 void *mc_kr_malloc(size_t size);
 mallstats   mc_kr_getmallstats(void);
+void mc_kr_malloc_stats(void);
 void *mc_kr_realloc(void *ptr, size_t size);
 void mc_kr_free(void *ptr);
 

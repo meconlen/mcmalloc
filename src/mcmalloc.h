@@ -14,7 +14,8 @@ extern "C" {
 // this gets us utilization and internal/external fragmentation 
 
 struct mc_mallstats {
-	size_t   memoryAllocated;	// bytes returned by *_malloc (not the bytes requested)
+	size_t 	allocationCount; 	// count of the current number of allocations (allows computation of overhead)
+	size_t   memoryAllocated;	// bytes requested and returned  by *_malloc
 	size_t   heapAllocated;		// toatl mapped by *_morecore, measures interal + external fragmentation
 	size_t   allocatedSpace;	// actual bytes allocated by *_malloc, measures internal fragmentation
 };
@@ -102,6 +103,7 @@ int64_t mc_get_vsize(void);
 void *mc_calloc(size_t count, size_t size);
 void *mc_malloc(size_t size);
 mallstats   mc_getmallstats(void);
+void mc_malloc_stats(void);
 void *mc_realloc(void *ptr, size_t size);
 void mc_free(void *ptr);
 

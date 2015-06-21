@@ -298,9 +298,10 @@ void  unit_mc_kr_mallstats(void)
 	void 			*core[4];
 	mallstats 	stats;
 
-	// allocate a block, verify some internal, no external fragmentation
+	// allocate a block sized region, verify some internal, no external fragmentation
 	core[0] = mc_kr_malloc((NALLOC - 1) * sizeof(mc_kr_Header));
 	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.allocationCount == 1);
 	CU_ASSERT(stats.memoryAllocated == (NALLOC - 1) * sizeof(mc_kr_Header));
 	if(stats.memoryAllocated != (NALLOC - 1) * sizeof(mc_kr_Header)) {
 		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, (NALLOC - 1) * sizeof(mc_kr_Header));
@@ -308,12 +309,14 @@ void  unit_mc_kr_mallstats(void)
 	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
 	CU_ASSERT(stats.allocatedSpace == (NALLOC - 1) * sizeof(mc_kr_Header));
 	if(stats.allocatedSpace != (NALLOC - 1) * sizeof(mc_kr_Header)) {
-		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, (NALLOC - 1)*sizeof(mc_kr_Header));
+		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, NALLOC * sizeof(mc_kr_Header));
 	}
+	mc_kr_malloc_stats();
 
 	// free the block 
 	mc_kr_free(core[0]);
 	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.allocationCount == 0);
 	CU_ASSERT(stats.memoryAllocated == 0);
 	if(stats.memoryAllocated != 0) {
 		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, 0L);
@@ -323,6 +326,27 @@ void  unit_mc_kr_mallstats(void)
 	if(stats.allocatedSpace != 0) {
 		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, 0L);
 	}
+	mc_kr_malloc_stats();
+
+
+	// allocate a partial block from the region
+	core[0] = mc_kr_malloc(((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.allocationCount == 1);
+	CU_ASSERT(stats.memoryAllocated == ((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	// shouldn't need anymore heap yet 
+	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	// allocator should be able to allocate exactly the right sized block since 
+	// the request is terms of NALLOC
+	CU_ASSERT(stats.allocatedSpace == ((NALLOC/2) - 1 ) * sizeof(mc_kr_Header));
+	mc_kr_malloc_stats();
+	core[1] = mc_kr_malloc(((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocationCount == 2);
+	CU_ASSERT(stats.memoryAllocated == ((NALLOC) - 2) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocatedSpace == ((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	mc_kr_free(core[0]);
+	mc_kr_free(core[1]);
 	return;
 }
 
