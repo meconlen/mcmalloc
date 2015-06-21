@@ -18,10 +18,6 @@
 #include <mach/mach_traps.h>
 #endif
 
-#ifdef HAVE_CUNIT_CUNIT_H
-	#include <CUnit/Basic.h>
-#endif
-
 #include "mcmalloc.h"
 
 // The inital node
@@ -55,6 +51,19 @@ void mc_kr_malloc_stats(void)
 			((double)mc_kr_mallstats.heapAllocated - (mc_kr_mallstats.allocatedSpace + mc_kr_mallstats.allocationCount * sizeof(mc_kr_Header))) / mc_kr_mallstats.heapAllocated);
 	fprintf(stderr, "\t overhead = %f\n", (double)mc_kr_mallstats.allocationCount * sizeof(mc_kr_Header) / mc_kr_mallstats.heapAllocated);
 	fprintf(stderr, "\t total loss = %f\n", ((double)mc_kr_mallstats.heapAllocated - mc_kr_mallstats.memoryAllocated) / mc_kr_mallstats.heapAllocated);
+	return;
+}
+
+void mc_kr_malloc_print_header(void *p)
+{
+	mc_kr_Header *bp;
+
+	bp = (mc_kr_Header *)p - 1;
+	fprintf(stderr, "Block at %p\n", p);
+	fprintf(stderr, "\t ptr = %p\n", bp->s.ptr);
+	fprintf(stderr, "\t bytes = %ld\n", bp->s.bytes);
+	fprintf(stderr, "\t size = %ld\n", bp->s.size);
+	return;
 }
 
 // This releases the memory in the free list. 
@@ -101,12 +110,16 @@ void mc_kr_PrintFreelist(void)
 
 // mc_kr_morecore()
 
-inline static mc_kr_Header *mc_kr_morecore(unsigned nu)
+size_t	mc_kr_pageSize = 0;
+size_t 	mc_kr_nalloc = 0;
+
+inline static mc_kr_Header *mc_kr_morecore(size_t nu)
 {
 	char				*cp;
 	mc_kr_Header	*up;
 
-	if(nu < NALLOC) nu = NALLOC;
+// printf("mc_kr_morecore(%lu), ps = %ld, na = %ld\n", nu, mc_kr_pageSize, mc_kr_nalloc);
+	if(nu < mc_kr_nalloc) nu = mc_kr_nalloc;
 	// get more space and return NULL if unable
 	if((cp = get_morecore(nu*sizeof(mc_kr_Header))) == NULL) return NULL;
 	up = (mc_kr_Header *)cp;
@@ -139,21 +152,29 @@ void *mc_kr_malloc(size_t nbytes)
 {
 	mc_kr_Header 	*p, *prevp;
 	uint64_t 		nunits;
+	uint64_t 		gcd;
 
-// printf("malloc(%ld)\n", nbytes);
+// printf("malloc(%lu)\n", nbytes);
 	nunits = (nbytes + sizeof(mc_kr_Header) - 1)/sizeof(mc_kr_Header) + 1;
 	// set prevp to the free list and see if it's empty
 	if((prevp = mc_kr_freep) == NULL) {
 		mc_kr_base.s.ptr = mc_kr_freep = prevp = &mc_kr_base;
 		mc_kr_base.s.size = 0;
+		// setup the actual page size
+		gcd = u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE));
+		mc_kr_pageSize = MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / gcd;
+		mc_kr_nalloc = ((mc_kr_pageSize) / (ALIGN_COUNT * ALIGN_SIZE));
 	}
+
 
 	// loop the freelist, incrementing prevp and p
 	// with prevp -> p
 	for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
-		if(p->s.size >= nunits) { // big enough 
-			if(p->s.size == nunits) { // exactly big enough
-				prevp->s.ptr = p->s.ptr; // cut it out of the list
+		if(p->s.size >= nunits) { 			// big enough 
+			if(p->s.size == nunits) { 		// exactly big enough
+				prevp->s.ptr = p->s.ptr;	// cut it out of the list
+													// size is already set
+				p->s.bytes = nbytes; 		// set the bytes of the new block
 			} else {
 				// we need to slice out a piece 
 				p->s.size -= nunits;		// fix the size of the remainder 

@@ -17,11 +17,19 @@
 #include <mach/mach_traps.h>
 #endif
 
-#ifdef HAVE_CUNIT_CUNIT_H
-	#include <CUnit/Basic.h>
-#endif
-
 #include "mcmalloc.h"
+
+// how is this not standard? 
+uint64_t u64gcd(uint64_t a, uint64_t b)
+{
+	uint64_t    r, i;
+	while(b!=0) {
+		r = a % b;
+		a = b;
+		b = r;
+	}
+	return a;
+}
 
 // getvsize
 

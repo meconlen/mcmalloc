@@ -25,55 +25,6 @@
 
 #ifdef HAVE_CUNIT_CUNIT_H
 
-static uint64_t mc_utilsSuite_vsize;
-
-int init_mc_utilsSuite(void)
-{
-	mc_utilsSuite_vsize = mc_get_vsize();
-	return 0;
-}
-
-int clean_mc_utilsSuite(void)
-{
-	if(mc_utilsSuite_vsize == mc_get_vsize()) {
-		return 0;
-	}
-	printf("mc_utilsSuite: start = %" PRIu64 "\n", mc_utilsSuite_vsize);
-	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
-	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_utilsSuite_vsize);
-	return 1;
-}
-
-
-void unit_mc_sbrk_morecore(void)
-{
-	char *curBrk = NULL, *newBrk = NULL;
-
-	curBrk = (char *)sbrk(0);
-	sbrk_morecore(4096);
-	newBrk = (char *)sbrk(0);
-	CU_ASSERT_PTR_NOT_NULL(newBrk);
-	CU_ASSERT(newBrk - curBrk == 4096);
-// the following is borked on OS X because 
-// Apple decided so
-#if !defined(__APPLE__)
-	sbrk(-4096);
-	newBrk = (char *)sbrk(0);
-	CU_ASSERT(newBrk == curBrk);
-#endif
-	return;
-}
-
-void unit_mc_mmap_morecore(void)
-{
-	void *core = NULL;
-
-	core = mmap_morecore(4096);
-	CU_ASSERT_PTR_NOT_NULL(core);
-	munmap(core, 4096);
-	return;
-}
-
 static uint64_t mc_kr_mallocSuite_vsize;
 
 int init_mc_kr_mallocSuite(void)
@@ -121,10 +72,13 @@ void unit_mc_kr_malloc(void)
 	void				*ptr[128];
 	uint64_t			i;
 
+	// it won't be set when we start so we compute it again
+	size_t 			nallocSize = ((MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE))) / (ALIGN_COUNT * ALIGN_SIZE));
+
 	CU_ASSERT_PTR_NULL(mc_kr_freep);
 
 	// allocate something that will fill one page (with header)
-	testPtr[0] = (char *)mc_kr_malloc((NALLOC - 1) * sizeof(mc_kr_Header));
+	testPtr[0] = (char *)mc_kr_malloc((nallocSize - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[0] != NULL);
 	CU_ASSERT(mc_kr_freep == &mc_kr_base);
 	CU_ASSERT(mc_kr_freep->s.ptr == &mc_kr_base);
@@ -133,29 +87,29 @@ void unit_mc_kr_malloc(void)
 	mc_kr_free(testPtr[0]);
 	current = &mc_kr_base;
 	CU_ASSERT(current->s.size == 0);
-	mc_kr_assertFreelist(NALLOC, 2);
+	mc_kr_assertFreelist(nallocSize, 2);
 
 	// Allocate half the block that's now on the free list
-	testPtr[0] = (char *)mc_kr_malloc((NALLOC/2 - 1) * sizeof(mc_kr_Header));
+	testPtr[0] = (char *)mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[0] != NULL);
-	mc_kr_assertFreelist((NALLOC/2), 2);
+	mc_kr_assertFreelist((nallocSize/2), 2);
 
 	// Allocate the other half of the block 
-	testPtr[1] = (char *)mc_kr_malloc((NALLOC/2 - 1) * sizeof(mc_kr_Header));
+	testPtr[1] = (char *)mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[1] != NULL);
 	mc_kr_assertFreelist(0, 1);
 
 	// free the first block
 	mc_kr_free(testPtr[0]);
-	mc_kr_assertFreelist((NALLOC/2), 2);
+	mc_kr_assertFreelist((nallocSize/2), 2);
 
 	// free the second block
 	mc_kr_free(testPtr[1]);
-	mc_kr_assertFreelist(NALLOC, 2);
+	mc_kr_assertFreelist(nallocSize, 2);
 
 	// Allocate group of four for coalescing tests
 	for(i=0; i<4; i++) {
-		testPtr[i] = (char *)mc_kr_malloc((NALLOC/4 - 1) * sizeof(mc_kr_Header));
+		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
 		CU_ASSERT_FATAL(testPtr[i] != NULL);
 	}
 	// Verify the free list is empty
@@ -167,16 +121,16 @@ void unit_mc_kr_malloc(void)
 	// coalescing to the next region 
 	mc_kr_free(testPtr[0]);
 	mc_kr_free(testPtr[1]);
-	mc_kr_assertFreelist((NALLOC/2), 2);
+	mc_kr_assertFreelist((nallocSize/2), 2);
 
 	// coalescing to the previous and next region
 	mc_kr_free(testPtr[3]);
 	mc_kr_free(testPtr[2]);
-	mc_kr_assertFreelist((NALLOC), 2);
+	mc_kr_assertFreelist((nallocSize), 2);
 
 	// Allocate group of four for coalescing tests
 	for(i=0; i<4; i++) {
-		testPtr[i] = (char *)mc_kr_malloc((NALLOC/4 - 1) * sizeof(mc_kr_Header));
+		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
 		CU_ASSERT_FATAL(testPtr[i] != NULL);
 	}
 	// Verify the free list is empty
@@ -185,12 +139,12 @@ void unit_mc_kr_malloc(void)
 	// coalescing to the previous region
 	mc_kr_free(testPtr[3]);
 	mc_kr_free(testPtr[2]);
-	mc_kr_assertFreelist((NALLOC/2), 2);
+	mc_kr_assertFreelist((nallocSize/2), 2);
 
 	// coalescing to the next and previous region
 	mc_kr_free(testPtr[0]);
 	mc_kr_free(testPtr[1]);
-	mc_kr_assertFreelist((NALLOC), 2);
+	mc_kr_assertFreelist((nallocSize), 2);
 
 	// break it up
 	for(i=0; i<128; i++) ptr[i] = mc_kr_malloc(i+1);
@@ -299,19 +253,18 @@ void  unit_mc_kr_mallstats(void)
 	mallstats 	stats;
 
 	// allocate a block sized region, verify some internal, no external fragmentation
-	core[0] = mc_kr_malloc((NALLOC - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_malloc((mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
 	stats = mc_kr_getmallstats();
 	CU_ASSERT(stats.allocationCount == 1);
-	CU_ASSERT(stats.memoryAllocated == (NALLOC - 1) * sizeof(mc_kr_Header));
-	if(stats.memoryAllocated != (NALLOC - 1) * sizeof(mc_kr_Header)) {
-		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, (NALLOC - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.memoryAllocated == (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
+	if(stats.memoryAllocated != (mc_kr_nalloc - 1) * sizeof(mc_kr_Header)) {
+		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
 	}
-	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
-	CU_ASSERT(stats.allocatedSpace == (NALLOC - 1) * sizeof(mc_kr_Header));
-	if(stats.allocatedSpace != (NALLOC - 1) * sizeof(mc_kr_Header)) {
-		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocatedSpace == (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
+	if(stats.allocatedSpace != (mc_kr_nalloc - 1) * sizeof(mc_kr_Header)) {
+		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, mc_kr_nalloc * sizeof(mc_kr_Header));
 	}
-	mc_kr_malloc_stats();
 
 	// free the block 
 	mc_kr_free(core[0]);
@@ -321,32 +274,58 @@ void  unit_mc_kr_mallstats(void)
 	if(stats.memoryAllocated != 0) {
 		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, 0L);
 	}
-	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
 	CU_ASSERT(stats.allocatedSpace == 0);
 	if(stats.allocatedSpace != 0) {
 		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, 0L);
 	}
-	mc_kr_malloc_stats();
 
 
 	// allocate a partial block from the region
-	core[0] = mc_kr_malloc(((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
 	stats = mc_kr_getmallstats();
 	CU_ASSERT(stats.allocationCount == 1);
-	CU_ASSERT(stats.memoryAllocated == ((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.memoryAllocated == ((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
 	// shouldn't need anymore heap yet 
-	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
 	// allocator should be able to allocate exactly the right sized block since 
-	// the request is terms of NALLOC
-	CU_ASSERT(stats.allocatedSpace == ((NALLOC/2) - 1 ) * sizeof(mc_kr_Header));
-	mc_kr_malloc_stats();
-	core[1] = mc_kr_malloc(((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	// the request is terms of mc_kr_nalloc
+	CU_ASSERT(stats.allocatedSpace == ((mc_kr_nalloc/2) - 1 ) * sizeof(mc_kr_Header));
+
+	// allocate the rest of the block from the region
+	core[1] = mc_kr_malloc( ((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header) );
+	stats = mc_kr_getmallstats();
 	CU_ASSERT(stats.allocationCount == 2);
-	CU_ASSERT(stats.memoryAllocated == ((NALLOC) - 2) * sizeof(mc_kr_Header));
-	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
-	CU_ASSERT(stats.allocatedSpace == ((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.memoryAllocated == ((mc_kr_nalloc) - 2) * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocatedSpace == ((mc_kr_nalloc) - 2) * sizeof(mc_kr_Header));
+
 	mc_kr_free(core[0]);
 	mc_kr_free(core[1]);
+
+	// start over 
+	mc_kr_releaseFreeList();
+
+	// allocate a single byte
+	core[0] = mc_kr_malloc(1);
+	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.allocationCount == 1);
+	CU_ASSERT(stats.memoryAllocated == 1);
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
+	// is it one header size or 
+	CU_ASSERT(stats.allocatedSpace == sizeof(mc_kr_Header));
+	if(stats.allocatedSpace != sizeof(mc_kr_Header)) {
+		printf("stats.allocatedSpace = %ld, expected %ld\n", stats.allocatedSpace, sizeof(mc_kr_Header));
+	}
+	// check that we allocate some multiple of page size (because apparently we weren't)
+	CU_ASSERT(stats.heapAllocated % MCMALLOC_PAGE_SIZE == 0);
+	if(stats.heapAllocated % MCMALLOC_PAGE_SIZE != 0) {
+		printf("\nexpected a multiple of %ld, got %ld = %ld (mod %ld)\n", MCMALLOC_PAGE_SIZE, stats.heapAllocated, stats.heapAllocated % MCMALLOC_PAGE_SIZE, MCMALLOC_PAGE_SIZE);
+		printf("\t mc_kr_nalloc = %lu\n", mc_kr_nalloc);
+		printf("\t ALIGN_COUNT = %d\n", ALIGN_COUNT);
+
+	}
+	mc_kr_free(core[0]);
 	return;
 }
 

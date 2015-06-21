@@ -27,15 +27,6 @@ typedef struct mc_mallstats mallstats;
 
 #define MC_ALLOCATOR_KR 1
 
-// page size
-#define MCMALLOC_PAGE_SIZE 4096
-
-// minimum number of units to allocate
-// 1 unit = 1 Header
-// This gets 4k pages at a time 
-
-#define NALLOC ((MCMALLOC_PAGE_SIZE) / (ALIGN_COUNT * ALIGN_SIZE))
-
 #ifndef USE_MC_PREFIX
 	#define mc_calloc calloc
 	#define mc_malloc    malloc 
@@ -45,6 +36,8 @@ typedef struct mc_mallstats mallstats;
 #endif
 
 // utilities the allocators call
+
+uint64_t u64gcd(uint64_t a, uint64_t b);
 
 void *sbrk_morecore(intptr_t incr);
 void *mmap_morecore(intptr_t incr);
@@ -75,10 +68,12 @@ extern "C" {
 // unit tests
 
 #ifdef HAVE_CUNIT_CUNIT_H
+
 int   init_mc_utilsSuite(void);
 int   clean_mc_utilsSuite(void);
 void  unit_mc_sbrk_morecore(void);
 void  unit_mc_mmap_morecore(void);
+void	unit_u64gcd(void);
 
 #endif
 
