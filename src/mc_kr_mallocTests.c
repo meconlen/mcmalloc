@@ -310,7 +310,10 @@ void  unit_mc_kr_mallstats(void)
 	if(stats.allocatedSpace != (NALLOC - 1) * sizeof(mc_kr_Header)) {
 		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, (NALLOC - 1)*sizeof(mc_kr_Header));
 	}
+
+	// free the block 
 	mc_kr_free(core[0]);
+	stats = mc_kr_getmallstats();
 	CU_ASSERT(stats.memoryAllocated == 0);
 	if(stats.memoryAllocated != 0) {
 		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, 0L);
