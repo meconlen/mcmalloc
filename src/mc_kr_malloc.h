@@ -39,11 +39,11 @@ typedef uint32_t Align;
 
 // K&R header
 union mc_kr_header {
-   struct {
-      union mc_kr_header   *ptr; // next element on free list
-      size_t            size; // size of allocation including header
-   } s;
-   Align x[ALIGN_COUNT];         // fix alignment
+	struct {
+		union mc_kr_header   *ptr; // next element on free list
+		size_t            size; // size of allocation including header
+	} s;
+	Align x[ALIGN_COUNT];         // fix alignment
 };
 
 typedef union mc_kr_header mc_kr_Header;
