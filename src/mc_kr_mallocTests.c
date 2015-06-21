@@ -88,7 +88,7 @@ int clean_mc_kr_mallocSuite(void)
 	if(mc_kr_mallocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("mc_utilsSuite: start = %" PRIu64 "\n", mc_kr_mallocSuite_vsize);
+	printf("mc_kr_mallocSuite: start = %" PRIu64 "\n", mc_kr_mallocSuite_vsize);
 	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
 	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_mallocSuite_vsize);
 	return 1;
@@ -112,14 +112,14 @@ void mc_kr_assertFreelist(size_t size, uint64_t count)
 
 void unit_mc_kr_malloc(void)
 {
-	char           *testPtr[4];
-	mc_kr_Header      *current;
+	char				*testPtr[4];
+	mc_kr_Header	*current;
 	
-	size_t      totalSize = 0;
-	uint64_t freeCount = 0;
+	size_t			totalSize = 0;
+	uint64_t			freeCount = 0;
 
-	void     *ptr[128];
-	uint64_t i;
+	void				*ptr[128];
+	uint64_t			i;
 
 	CU_ASSERT_PTR_NULL(mc_kr_freep);
 
@@ -213,7 +213,7 @@ int clean_mc_kr_reallocSuite(void)
 	if(mc_kr_reallocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("mc_utilsSuite: start = %" PRIu64 "\n", mc_kr_reallocSuite_vsize);
+	printf("mc_kr_reallocSuite: start = %" PRIu64 "\n", mc_kr_reallocSuite_vsize);
 	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
 	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_reallocSuite_vsize);
 	return 1;
@@ -250,7 +250,7 @@ int clean_mc_kr_callocSuite(void)
 	if(mc_kr_callocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("\n mc_utilsSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
+	printf("\n mc_kr_callocSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
 	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
 	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_callocSuite_vsize);
 	return 1;
@@ -275,7 +275,7 @@ void unit_mc_kr_calloc(void)
 
 int   init_mc_kr_mallstatsSuite(void)
 {
-	mc_mallstats   current;
+	mallstats   current;
 	current = mc_kr_getmallstats();
 	if(current.memoryAllocated != 0 || current.heapAllocated != 0 || current.allocatedSpace !=0) return -1;
 	return 0;
@@ -283,11 +283,11 @@ int   init_mc_kr_mallstatsSuite(void)
 
 int   clean_mc_kr_mallstatsSuite(void)
 {
-  mc_kr_releaseFreeList();
+ 	mc_kr_releaseFreeList();
 	if(mc_kr_callocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("\n mc_utilsSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
+	printf("\n mc_kr_mallstatsSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
 	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
 	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_callocSuite_vsize);
 	return 1;
@@ -295,7 +295,31 @@ int   clean_mc_kr_mallstatsSuite(void)
 
 void  unit_mc_kr_mallstats(void)
 {
-	 
+	void 			*core[4];
+	mallstats 	stats;
+
+	// allocate a block, verify some internal, no external fragmentation
+	core[0] = mc_kr_malloc((NALLOC - 1) * sizeof(mc_kr_Header));
+	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.memoryAllocated == (NALLOC - 1) * sizeof(mc_kr_Header));
+	if(stats.memoryAllocated != (NALLOC - 1) * sizeof(mc_kr_Header)) {
+		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, (NALLOC - 1) * sizeof(mc_kr_Header));
+	}
+	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocatedSpace == (NALLOC - 1) * sizeof(mc_kr_Header));
+	if(stats.allocatedSpace != (NALLOC - 1) * sizeof(mc_kr_Header)) {
+		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, (NALLOC - 1)*sizeof(mc_kr_Header));
+	}
+	mc_kr_free(core[0]);
+	CU_ASSERT(stats.memoryAllocated == 0);
+	if(stats.memoryAllocated != 0) {
+		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, 0L);
+	}
+	CU_ASSERT(stats.heapAllocated == NALLOC * sizeof(mc_kr_Header));
+	CU_ASSERT(stats.allocatedSpace == 0);
+	if(stats.allocatedSpace != 0) {
+		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, 0L);
+	}
 	return;
 }
 

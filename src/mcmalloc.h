@@ -14,9 +14,9 @@ extern "C" {
 // this gets us utilization and internal/external fragmentation 
 
 struct mc_mallstats {
-	size_t   memoryAllocated;  // user requested bytes by *_malloc
-	size_t   heapAllocated;       // toatl mapped by *_morecore
-	size_t   allocatedSpace;   // space used by blocks for memoryAllocated
+	size_t   memoryAllocated;	// bytes returned by *_malloc (not the bytes requested)
+	size_t   heapAllocated;		// toatl mapped by *_morecore, measures interal + external fragmentation
+	size_t   allocatedSpace;	// actual bytes allocated by *_malloc, measures internal fragmentation
 };
 
 typedef struct mc_mallstats mallstats;
