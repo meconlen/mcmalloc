@@ -3,8 +3,8 @@
 
 #include <config.h>
 
-#include <stdint.h>  	// uint64_t
-#include <sys/types.h>	// size_t
+#include <stdint.h>     // uint64_t
+#include <sys/types.h>  // size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,9 +14,9 @@ extern "C" {
 // this gets us utilization and internal/external fragmentation 
 
 struct mc_mallstats {
-	size_t 	memoryAllocated;	// user requested bytes by *_malloc
-	size_t 	heapAllocated; 		// toatl mapped by *_morecore
-	size_t 	allocatedSpace; 	// space used by blocks for memoryAllocated
+	size_t   memoryAllocated;  // user requested bytes by *_malloc
+	size_t   heapAllocated;       // toatl mapped by *_morecore
+	size_t   allocatedSpace;   // space used by blocks for memoryAllocated
 };
 
 typedef struct mc_mallstats mallstats;
@@ -24,7 +24,7 @@ typedef struct mc_mallstats mallstats;
 
 // allocator constants
 
-#define MC_ALLOCATOR_KR	1
+#define MC_ALLOCATOR_KR 1
 
 // page size
 #define MCMALLOC_PAGE_SIZE 4096
@@ -33,14 +33,14 @@ typedef struct mc_mallstats mallstats;
 // 1 unit = 1 Header
 // This gets 4k pages at a time 
 
-#define NALLOC	((MCMALLOC_PAGE_SIZE) / (ALIGN_COUNT * ALIGN_SIZE))
+#define NALLOC ((MCMALLOC_PAGE_SIZE) / (ALIGN_COUNT * ALIGN_SIZE))
 
 #ifndef USE_MC_PREFIX
-	#define mc_calloc	calloc
-	#define mc_malloc 	malloc 
-	#define mc_getmallstats 	getmallstats
-	#define mc_realloc	realloc
-	#define mc_free 	mcfree
+	#define mc_calloc calloc
+	#define mc_malloc    malloc 
+	#define mc_getmallstats    getmallstats
+	#define mc_realloc   realloc
+	#define mc_free   mcfree
 #endif
 
 // utilities the allocators call
@@ -74,10 +74,10 @@ extern "C" {
 // unit tests
 
 #ifdef HAVE_CUNIT_CUNIT_H
-int 	init_mc_utilsSuite(void);
-int 	clean_mc_utilsSuite(void);
-void 	unit_mc_sbrk_morecore(void);
-void 	unit_mc_mmap_morecore(void);
+int   init_mc_utilsSuite(void);
+int   clean_mc_utilsSuite(void);
+void  unit_mc_sbrk_morecore(void);
+void  unit_mc_mmap_morecore(void);
 
 #endif
 
@@ -101,7 +101,7 @@ int64_t mc_get_vsize(void);
 // C allocator
 void *mc_calloc(size_t count, size_t size);
 void *mc_malloc(size_t size);
-mallstats 	mc_getmallstats(void);
+mallstats   mc_getmallstats(void);
 void *mc_realloc(void *ptr, size_t size);
 void mc_free(void *ptr);
 
