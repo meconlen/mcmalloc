@@ -26,44 +26,6 @@ typedef struct mc_mallstats mallstats;
 
 #define MC_ALLOCATOR_KR	1
 
-// Setup 
-
-// alignment 
-
-// size of struct { } s; below
-#define S_SIZE (SIZEOF_VOID_P + SIZEOF_SIZE_T)
-
-// alignment size is 8 bytes unless no uint64_t then 32
-#ifdef HAVE_UINT64_T
-typedef uint64_t Align;
-#define ALIGN_SIZE (SIZEOF_UINT64_T)
-#else
-typedef uint32_t Align;
-#define ALIGN_SIZE SIZEOF_UINT32_T
-#endif
-
-// number of alignment blocks in S_SIZE and modulus
-#define S_BLOCKS  (S_SIZE / ALIGN_SIZE)  
-#define S_MODULUS  (S_SIZE - (ALIGN_SIZE * S_BLOCKS))
-
-// count of alignment elements to pad header if necessary 
-#if S_MODULUS == 0
-#define ALIGN_COUNT S_BLOCKS
-#else
-#define ALIGN_COUNT (S_BLOCKS + 1)
-#endif
-
-// K&R header
-union mc_kr_header {
-	struct {
-		union mc_kr_header	*ptr;	// next element on free list
-		size_t	 			size;	// size of allocation including header
-	} s;
-	Align x[ALIGN_COUNT]; 			// fix alignment
-};
-
-typedef union mc_kr_header mc_kr_Header;
-
 // page size
 #define MCMALLOC_PAGE_SIZE 4096
 
@@ -81,6 +43,34 @@ typedef union mc_kr_header mc_kr_Header;
 	#define mc_free 	mcfree
 #endif
 
+// utilities the allocators call
+
+void *sbrk_morecore(intptr_t incr);
+void *mmap_morecore(intptr_t incr);
+
+// OS X only has 4 MB of traditional sbrk space and is actually emulated
+// http://www.opensource.apple.com/source/Libc/Libc-763.12/emulated/brk.c
+// so we need to use mmap()
+#if !defined(__APPLE__) && defined(HAVE_SBRK)
+#define get_morecore sbrk_morecore
+#elif defined(HAVE_MMAP)
+#define get_morecore mmap_morecore
+#elif
+#error No way to get memory
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+// Include headers for each allocator here
+
+#include "mc_kr_malloc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // unit tests
 
 #ifdef HAVE_CUNIT_CUNIT_H
@@ -89,32 +79,24 @@ int 	clean_mc_utilsSuite(void);
 void 	unit_mc_sbrk_morecore(void);
 void 	unit_mc_mmap_morecore(void);
 
-int 	init_mc_kr_mallocSuite(void);
-int 	clean_mc_kr_mallocSuite(void);
-void 	unit_mc_kr_malloc(void);
+#endif
 
-int 	init_mc_kr_callocSuite(void);
-int 	clean_mc_kr_callocSuite(void);
-void 	unit_mc_kr_calloc(void);
+#ifdef __cplusplus
+}
+#endif
 
-int 	init_mc_kr_reallocSuite(void);
-int 	clean_mc_kr_reallocSuite(void);
-void 	unit_mc_kr_realloc(void);
+// Include headers for each allocator's unit tests here
 
+#include "mc_kr_mallocTests.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 // utilities 
 
-static void *sbrk_morecore(intptr_t incr);
-static void *mmap_morecore(intptr_t incr);
-static void *get_morecore(intptr_t incr);
+int64_t mc_get_vsize(void);
 
-// K&R C allocator
-void *mc_kr_calloc(size_t count, size_t size);
-void *mc_kr_malloc(size_t size);
-mallstats 	mc_kr_getmallstats(void);
-void *mc_kr_realloc(void *ptr, size_t size);
-void mc_kr_free(void *ptr);
 
 // C allocator
 void *mc_calloc(size_t count, size_t size);
