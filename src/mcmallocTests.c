@@ -16,6 +16,7 @@
 
 static uint64_t mc_utilsSuite_vsize;
 
+#ifdef HAVE_CUNIT_CUNIT_H
 int init_mc_utilsSuite(void)
 {
    mc_utilsSuite_vsize = mc_get_vsize();
@@ -74,3 +75,5 @@ void unit_u64gcd(void)
    }
    return;
 }
+#endif
+

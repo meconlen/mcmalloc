@@ -24,7 +24,8 @@ case $host_os in
 		LDFLAGS="$LDFLAGS -L/opt/local/lib"
 	;;
 	linux*)
-		# Do something specific for linux
+		# configure won't find getpagesize without this	
+		CPPFLAGS="$CPPFLAGS -D_BSD_SOURCE=1"
 	;;
 	*BSD*)
 		# Do something specific for BSD
@@ -41,9 +42,10 @@ AC_SEARCH_LIBS([CU_initialize_registry], [cunit], [
 ], [ ])
 
 
+AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_HEADERS([stdio.h])
 AC_CHECK_HEADERS([stdlib.h])
-AC_CHECK_HEADERS([malloc.h])
+AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_HEADERS([sys/malloc.h])
 AC_CHECK_HEADERS([malloc/malloc.h])
 
