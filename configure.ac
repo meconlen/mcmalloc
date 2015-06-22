@@ -11,8 +11,8 @@ AC_PROG_RANLIB
 AM_PROG_AR
 AC_HEADER_STDC
 
-CPPFLAGS="$CPPFLAGS -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
-CCFLAGS="$CCFLAGS -std=c99"
+CPPFLAGS="$CPPFLAGS"
+CFLAGS="$CFLAGS -std=c99 -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
 CXXFLAGS="$CXXFLAGS --std=c++0x -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
 LDFLAGS="$LDFLAGS"
 
