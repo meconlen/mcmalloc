@@ -76,10 +76,10 @@ void mc_kr_releaseFreeList(void)
 	mc_kr_Header *next;
 	while(core != &mc_kr_base) {
 		next = core->s.ptr;
-#if !defined(__APPLE__) && defined(HAVE_SBRK)
-		sbrk(-(core->s.size * sizeof(mc_kr_Header)));
-#elif defined(HAVE_MMAP)
+#if defined(HAVE_MMAP)
 		munmap(core, core->s.size * sizeof(mc_kr_Header));
+#elif !defined(__APPLE__) && defined(HAVE_SBRK)
+		sbrk(-(core->s.size * sizeof(mc_kr_Header)));
 #endif
 		core = next;
 	}
