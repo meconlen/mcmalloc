@@ -11,9 +11,10 @@ AC_PROG_RANLIB
 AM_PROG_AR
 AC_HEADER_STDC
 
-CPPFLAGS="$CPPFLAGS --std=c99 -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
+CPPFLAGS="$CPPFLAGS -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
 CCFLAGS="$CCFLAGS"
 CXXFLAGS="$CXXFLAGS --std=c++0x -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
+CPPFLAGS="-std=c99 $CPPFLAGS"
 LDFLAGS="$LDFLAGS"
 
 case $host_os in
