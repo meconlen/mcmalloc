@@ -1,5 +1,6 @@
 #include <config.h>
-#define __STDC_FORMAT_MACROS
+#include "mcmalloc.h"
+
 #include <inttypes.h>		// XintY_t
 #include <stddef.h>			// NULL
 #include <stdio.h> 			// STDERR
@@ -18,7 +19,6 @@
 #include <mach/mach_traps.h>
 #endif
 
-#include "mcmalloc.h"
 
 // The inital node
 mc_kr_Header mc_kr_base;
@@ -60,7 +60,7 @@ void mc_kr_malloc_print_header(void *p)
 
 	bp = (mc_kr_Header *)p - 1;
 	fprintf(stderr, "Block at %p\n", p);
-	fprintf(stderr, "\t ptr = %p\n", bp->s.ptr);
+	fprintf(stderr, "\t ptr = %p\n", (void *)bp->s.ptr);
 	fprintf(stderr, "\t bytes = %ld\n", bp->s.bytes);
 	fprintf(stderr, "\t size = %ld\n", bp->s.size);
 	return;
