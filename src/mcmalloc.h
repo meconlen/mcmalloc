@@ -49,7 +49,7 @@ void *mmap_morecore(intptr_t incr);
 #define get_morecore sbrk_morecore
 #elif defined(HAVE_MMAP)
 #define get_morecore mmap_morecore
-#elif
+#else
 #error No way to get memory
 #endif
 
@@ -61,25 +61,7 @@ void *mmap_morecore(intptr_t incr);
 
 #include "mc_kr_malloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-// unit tests
-
-#ifdef HAVE_CUNIT_CUNIT_H
-
-int   init_mc_utilsSuite(void);
-int   clean_mc_utilsSuite(void);
-void  unit_mc_sbrk_morecore(void);
-void  unit_mc_mmap_morecore(void);
-void	unit_u64gcd(void);
-
-#endif
-
-#ifdef __cplusplus
-}
-#endif
 
 // Include headers for each allocator's unit tests here
 
