@@ -103,7 +103,7 @@ void mc_kr_PrintFreelist(void)
 
 	printf("Freelist: \n");
 	do {
-		printf("%p: (%lu, %p, %p)\n", current, current->s.size, current->s.ptr, current+1);
+		printf("%p: (%lu, %p, %p)\n", current, current->s.size, (void *)current->s.ptr, (void *)(current+1));
 		current = current->s.ptr;
 	} while(current != &mc_kr_base);
 }
