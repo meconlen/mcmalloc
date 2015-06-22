@@ -3,7 +3,7 @@
 
 #include <inttypes.h>		// XintY_t
 #include <stddef.h> 		// NULL
-#include <string.h>			// strlen()
+#include <string.h>		// strlen()
 #include <unistd.h> 		// brk(), sbrk()
 
 #include <sys/mman.h> 		// mmap()
@@ -20,6 +20,7 @@
 
 
 // how is this not standard? 
+// might as well go big or go home 
 uint64_t u64gcd(uint64_t a, uint64_t b)
 {
 	uint64_t    r, i;
