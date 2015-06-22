@@ -181,9 +181,10 @@ int clean_mc_kr_reallocSuite(void)
 void unit_mc_kr_realloc(void)
 {
 	void *core[4], *oldCore;
+	size_t 			nallocSize = ((MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE))) / (ALIGN_COUNT * ALIGN_SIZE));
 
-	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
-	core[1] = mc_kr_realloc(core[0], (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
+	core[1] = mc_kr_realloc(core[0], (nallocSize - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT(core[0] == core[1]);
 mc_kr_PrintFreelist();
 printf("core[0] = %p\n", (void *)core[0]);
@@ -193,9 +194,9 @@ printf("core[1] = %p\n", (void *)core[1]);
 	if(core[0] != core[1]) mc_kr_free(core[0]);
 	mc_kr_releaseFreeList();
 
-	core[0] = mc_kr_malloc(((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_malloc(((nallocSize) - 1) * sizeof(mc_kr_Header));
 	oldCore = core[0];
-	core[0] = mc_kr_realloc(core[0], ((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_realloc(core[0], ((nallocSize/2) - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT(core[0] == oldCore);
 	mc_kr_free(core[0]);
 	return;
