@@ -3,6 +3,8 @@
 
 #include <config.h>
 
+#define __STDC_FORMAT_MACROS
+#define _BSD_SOURCE
 #include <stdint.h>     // uint64_t
 #include <sys/types.h>  // size_t
 

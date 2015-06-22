@@ -1,5 +1,6 @@
 #include <config.h>
-#define __STDC_FORMAT_MACROS
+#include "mcmalloc.h"
+
 #include <inttypes.h>		// XintY_t
 #include <stddef.h> 		// NULL
 #include <string.h>			// strlen()
@@ -17,7 +18,6 @@
 #include <mach/mach_traps.h>
 #endif
 
-#include "mcmalloc.h"
 
 // how is this not standard? 
 uint64_t u64gcd(uint64_t a, uint64_t b)
