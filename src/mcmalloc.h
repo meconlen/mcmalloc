@@ -4,7 +4,7 @@
 #include <config.h>
 
 #define __STDC_FORMAT_MACROS
-#define _BSD_SOURCE 1
+#define _XOPEN_SOURCE 600
 #include <stdint.h>     // uint64_t
 #include <sys/types.h>  // size_t
 
@@ -47,10 +47,10 @@ void *mmap_morecore(intptr_t incr);
 // OS X only has 4 MB of traditional sbrk space and is actually emulated
 // http://www.opensource.apple.com/source/Libc/Libc-763.12/emulated/brk.c
 // so we need to use mmap()
-#if !defined(__APPLE__) && defined(HAVE_SBRK)
-#define get_morecore sbrk_morecore
-#elif defined(HAVE_MMAP)
+#if defined(HAVE_MMAP)
 #define get_morecore mmap_morecore
+#elif !defined(__APPLE__) && defined(HAVE_SBRK)
+#define get_morecore sbrk_morecore
 #else
 #error No way to get memory
 #endif
