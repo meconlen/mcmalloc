@@ -20,7 +20,7 @@
 
 
 // how is this not standard? 
-// might as well go big or go home
+// might as well go big or go home 
 uint64_t u64gcd(uint64_t a, uint64_t b)
 {
 	uint64_t    r, i;
