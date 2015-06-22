@@ -48,10 +48,10 @@ AC_CHECK_HEADERS([sys/malloc.h])
 AC_CHECK_HEADERS([malloc/malloc.h])
 
 AC_FUNC_MMAP
-AC_CHECK_FUNCS(sbrk)
+AC_CHECK_FUNC(sbrk)
 
-AC_CHECK_FUNCS(getenv)
-AC_CHECK_FUNCS(secure_getenv)
+AC_CHECK_FUNC(getenv)
+AC_CHECK_FUNC(secure_getenv)
 
 AC_CHECK_TYPES([uint64_t], [
 	AC_CHECK_SIZEOF([uint64_t])

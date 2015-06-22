@@ -5,6 +5,16 @@
 
 #define __STDC_FORMAT_MACROS
 #define _BSD_SOURCE 1
+
+// we need to use __THROW on glibc to match their headers 
+// so if we aren't there define these (thanks tcmalloc)
+#ifndef __THROW
+#define __THROW
+#define __attribute_malloc__
+#define __attribute_warn_unused_result__
+#define __wur
+#endif
+
 #include <stdint.h>     // uint64_t
 #include <sys/types.h>  // size_t
 
