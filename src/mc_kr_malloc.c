@@ -204,21 +204,22 @@ void *mc_kr_realloc(void *ptr, size_t size)
 {  
 	size_t			newUnits;
 	mc_kr_Header	*newSpace, *oldSpace;
+	mc_kr_Header 	*start, *last, *current;
 	void				*newPtr;
 
 	// if NULL then malloc()
 	if(ptr == NULL) {
 		return mc_kr_malloc(size);
 	}
+	// set the new size (space for size + 1 for the header)
+	newUnits = (size / sizeof(mc_kr_Header)) + (size % sizeof(mc_kr_Header) == 0 ? 0 : 1) + 1;	
 	oldSpace = (mc_kr_Header *)ptr - 1;
 	// if new size is smaller than old size put the remainder on the free list
 	// but only if by more than 2 Headers 
 	if(size <= (((mc_kr_Header *)ptr - 1)->s.size - 2) * sizeof(mc_kr_Header)) {
 		// compute new size in terms of Header units 
-		// set the new size
 		// put the remainder onto the free list
 		
-		newUnits = (size / sizeof(mc_kr_Header)) + (size % sizeof(mc_kr_Header) == 0 ? 0 : 1) + 1;
 		if(newUnits < oldSpace->s.size - 2) {
 			newSpace = oldSpace + newUnits;
 			newSpace->s.size = oldSpace->s.size - newUnits;
@@ -231,6 +232,25 @@ void *mc_kr_realloc(void *ptr, size_t size)
 	}
 	// if new size is larger than old size 
 	if(size > ((mc_kr_Header *)ptr - 1)->s.size) {
+		start = &mc_kr_base; 
+		last = start;
+		current = last->s.ptr;
+		while(current != start) {
+			if(current == oldSpace + oldSpace->s.size) {
+				oldSpace->s.size += current->s.size;	// add the current blocks size
+				last->s.ptr = current->s.ptr;				// remove current from the free list
+				if(oldSpace->s.size >= newUnits) { 	// we are done
+					oldSpace->s.bytes = size;
+					return oldSpace;
+				}
+				// we coalesced but need more, start over 
+				last = &mc_kr_base;
+				current = last->s.ptr;
+			}
+			last = current;
+			current = last->s.ptr;
+		}
+		// we looped all the way around
 		newPtr = mc_kr_malloc(size);
 		if(newPtr == NULL) return newPtr;
 		memcpy(newPtr, ptr, oldSpace->s.size * sizeof(mc_kr_Header));

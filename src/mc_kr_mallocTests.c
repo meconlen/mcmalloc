@@ -182,9 +182,15 @@ void unit_mc_kr_realloc(void)
 {
 	void *core[4], *oldCore;
 
-	core[0] = mc_kr_malloc(((NALLOC) - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
+	core[1] = mc_kr_realloc(core[0], (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(core[0] == core[1]);
+	mc_kr_free(core[0]);
+	mc_kr_releaseFreeList();
+
+	core[0] = mc_kr_malloc(((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
 	oldCore = core[0];
-	core[0] = mc_kr_realloc(core[0], ((NALLOC/2) - 1) * sizeof(mc_kr_Header));
+	core[0] = mc_kr_realloc(core[0], ((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT(core[0] == oldCore);
 	mc_kr_free(core[0]);
 	return;
