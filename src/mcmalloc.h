@@ -4,7 +4,7 @@
 #include <config.h>
 
 #define __STDC_FORMAT_MACROS
-#define _BSD_SOURCE
+#define _BSD_SOURCE 1
 #include <stdint.h>     // uint64_t
 #include <sys/types.h>  // size_t
 
@@ -79,12 +79,12 @@ int64_t mc_get_vsize(void);
 
 
 // C allocator
-void *mc_calloc(size_t count, size_t size);
-void *mc_malloc(size_t size);
+void *mc_calloc(size_t count, size_t size) __THROW __attribute_malloc__ __wur;
+void *mc_malloc(size_t size) __THROW __attribute_malloc__ __wur;
 mallstats   mc_getmallstats(void);
 void mc_malloc_stats(void);
-void *mc_realloc(void *ptr, size_t size);
-void mc_free(void *ptr);
+void *mc_realloc(void *ptr, size_t size)  __THROW __attribute_warn_unused_result__;
+void mc_free(void *ptr)  __THROW;
 
 #ifdef __cplusplus
 }
