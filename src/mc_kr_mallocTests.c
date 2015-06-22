@@ -326,6 +326,21 @@ void  unit_mc_kr_mallstats(void)
 
 	}
 	mc_kr_free(core[0]);
+
+	// allocate half the realloc the rest
+
+	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
+	core[1] = mc_kr_realloc(core[0], ((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(core[0] == core[1]);
+	stats = mc_kr_getmallstats();
+	CU_ASSERT(stats.allocationCount == 1);
+	CU_ASSERT(stats.memoryAllocated == ((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
+	// shouldn't need anymore heap yet 
+	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
+	// allocator should be able to allocate exactly the right sized block since 
+	// the request is terms of mc_kr_nalloc
+	CU_ASSERT(stats.allocatedSpace == ((mc_kr_nalloc) - 1 ) * sizeof(mc_kr_Header));
+
 	return;
 }
 

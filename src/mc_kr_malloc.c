@@ -202,9 +202,9 @@ void *mc_kr_malloc(size_t nbytes)
 
 void *mc_kr_realloc(void *ptr, size_t size)
 {  
-	size_t         newUnits;
-	mc_kr_Header   *newSpace, *oldSpace;
-	void        *newPtr;
+	size_t			newUnits;
+	mc_kr_Header	*newSpace, *oldSpace;
+	void				*newPtr;
 
 	// if NULL then malloc()
 	if(ptr == NULL) {
