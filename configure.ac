@@ -12,9 +12,8 @@ AM_PROG_AR
 AC_HEADER_STDC
 
 CPPFLAGS="$CPPFLAGS -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
-CCFLAGS="$CCFLAGS"
+CCFLAGS="$CCFLAGS -std=c99"
 CXXFLAGS="$CXXFLAGS --std=c++0x -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
-CPPFLAGS="-std=c99 $CPPFLAGS"
 LDFLAGS="$LDFLAGS"
 
 case $host_os in
