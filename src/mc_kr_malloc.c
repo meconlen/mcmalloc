@@ -273,15 +273,18 @@ void mc_kr_free(void *ap)
 
 	// loop through the free list while bp is not between p and p->s.ptr (next p)
 	for(p = mc_kr_freep; !(p < bp && bp < p->s.ptr); p = p->s.ptr) {
-		if(bp == p) return; // it's already on the freelist, probably double free
+		if(bp == p) return; // it's already on the freelist, probably double free (meconlen)
+		if(p < bp && bp < p + p->s.size) return; // the element we are freeing is inside a free block, double free (mconlen)
 		// p >= p->s.ptr -> we've reached the end of the list and it points back to the start
+		// this assumes that the stack is below everything else, should probably change to look for 0 size element
+
 		// that is {p->s.ptr, p}
 		// if bp > p then {p->s.ptr, p, bp}
 		// if bp < p->s.ptr then {bp, p->s.ptr, p}
 		if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
 			break; 
 	}
-	if(bp + bp->s.size == p->s.ptr) { // bp is just before p, join them
+	if(bp + bp->s.size == p->s.ptr) { // bp is just before p->s.ptr, join bp to p->s.ptr
 		bp->s.size += p->s.ptr->s.size; // increase the size of bp
 		bp->s.ptr = p->s.ptr->s.ptr; // update the next pointer
 	} else {
