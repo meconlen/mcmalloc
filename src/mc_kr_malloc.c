@@ -255,6 +255,7 @@ void *mc_kr_realloc(void *ptr, size_t size)
 		if(newPtr == NULL) return newPtr;
 		memcpy(newPtr, ptr, oldSpace->s.size * sizeof(mc_kr_Header));
 		mc_kr_free(ptr);
+		return newPtr;
 	}
 	return NULL;
 }
@@ -271,7 +272,7 @@ void mc_kr_free(void *ap)
 	mc_kr_mallstats.allocationCount--;
 
 	// loop through the free list while bp is not between p and p->s.ptr (next p)
-	for(p = mc_kr_freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr) 
+	for(p = mc_kr_freep; !(p < bp && bp < p->s.ptr); p = p->s.ptr) 
 		// p >= p->s.ptr -> we've reached the end of the list and it points back to the start
 		// that is {p->s.ptr, p}
 		// if bp > p then {p->s.ptr, p, bp}
@@ -282,7 +283,7 @@ void mc_kr_free(void *ap)
 		bp->s.size += p->s.ptr->s.size; // increase the size of bp
 		bp->s.ptr = p->s.ptr->s.ptr; // update the next pointer
 	} else {
-		bp->s.ptr = p->s.ptr; // point bp to p
+		bp->s.ptr = p->s.ptr; // point bp to p->s.ptr, inserting bp after p
 	}
 
 	if(p + p->s.size == bp) { // p is just before bp, join them

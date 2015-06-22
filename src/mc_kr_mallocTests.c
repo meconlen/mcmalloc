@@ -185,6 +185,10 @@ void unit_mc_kr_realloc(void)
 	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
 	core[1] = mc_kr_realloc(core[0], (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT(core[0] == core[1]);
+mc_kr_PrintFreelist();
+printf("core[0] = %p\n", (void *)core[0]);
+printf("core[1] = %p\n", (void *)core[1]);
+
 	mc_kr_free(core[0]);
 	mc_kr_releaseFreeList();
 
