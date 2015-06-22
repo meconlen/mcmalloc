@@ -77,7 +77,7 @@ void mc_kr_releaseFreeList(void)
 	while(core != &mc_kr_base) {
 		next = core->s.ptr;
 #if !defined(__APPLE__) && defined(HAVE_SBRK)
-		sbrk(core, -(core->s.size * sizeof(mc_kr_Header));
+		sbrk(core, -(core->s.size * sizeof(mc_kr_Header)));
 #elif defined(HAVE_MMAP)
 		munmap(core, core->s.size * sizeof(mc_kr_Header));
 #endif
