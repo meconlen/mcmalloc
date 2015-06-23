@@ -33,7 +33,7 @@ using namespace std;
 
 #ifdef HAVE_CUNIT_CUNIT_H
 
-static uint64_t mc_kr_mallocSuite_vsize;
+static ssize_t mc_kr_mallocSuite_vsize;
 
 int init_mc_kr_mallocSuite(void)
 {
@@ -160,7 +160,7 @@ void unit_mc_kr_malloc(void)
 	return;
 }
 
-static uint64_t mc_kr_reallocSuite_vsize;
+static ssize_t mc_kr_reallocSuite_vsize;
 
 int init_mc_kr_reallocSuite(void)
 {
@@ -198,7 +198,7 @@ void unit_mc_kr_realloc(void)
 	return;
 }
 
-static uint64_t mc_kr_callocSuite_vsize;
+static ssize_t mc_kr_callocSuite_vsize;
 
 int init_mc_kr_callocSuite(void)
 {
