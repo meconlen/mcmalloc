@@ -128,6 +128,10 @@ void unit_mc_kr_malloc(void)
 	mc_kr_free(testPtr[2]);
 	mc_kr_assertFreelist((nallocSize), 2);
 
+	// need to consider that mmap may be allocated top down (linux) or bottom up (OS X)
+	// need to test malloc/free in various configurations (though we should have symmetry)
+	// allocations from within a block are allocated high to low (top down, back to front)
+	
 	// Allocate group of four for coalescing tests
 	for(i=0; i<4; i++) {
 		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
@@ -146,9 +150,19 @@ void unit_mc_kr_malloc(void)
 	mc_kr_free(testPtr[1]);
 	mc_kr_assertFreelist((nallocSize), 2);
 
-	// break it up
-	for(i=0; i<128; i++) ptr[i] = mc_kr_malloc(i+1);
-	for(i=0; i<128; i++) mc_kr_free(ptr[i]); 
+	// Allocate group of four for coalescing tests
+	for(i=0; i<4; i++) {
+		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
+		CU_ASSERT_FATAL(testPtr[i] != NULL);
+	}
+	// Verify the free list is empty
+	mc_kr_assertFreelist(0, 1);
+	for(i=0; i<4; i++) {
+		mc_kr_free(testPtr[i]);
+	}
+
+	mc_kr_releaseFreeList();
+
 
 	return;
 }
@@ -185,20 +199,9 @@ void unit_mc_kr_realloc(void)
 
 	core[0] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
 	core[1] = mc_kr_realloc(core[0], (nallocSize - 1) * sizeof(mc_kr_Header));
-	CU_ASSERT(core[0] == core[1]);
-mc_kr_PrintFreelist();
-printf("core[0] = %p\n", (void *)core[0]);
-printf("core[1] = %p\n", (void *)core[1]);
-
 	mc_kr_free(core[1]);
-	if(core[0] != core[1]) mc_kr_free(core[0]);
 	mc_kr_releaseFreeList();
 
-	core[0] = mc_kr_malloc(((nallocSize) - 1) * sizeof(mc_kr_Header));
-	oldCore = core[0];
-	core[0] = mc_kr_realloc(core[0], ((nallocSize/2) - 1) * sizeof(mc_kr_Header));
-	CU_ASSERT(core[0] == oldCore);
-	mc_kr_free(core[0]);
 	return;
 }
 
@@ -339,19 +342,7 @@ void  unit_mc_kr_mallstats(void)
 	}
 	mc_kr_free(core[0]);
 
-	// allocate half the realloc the rest
-
-	core[0] = mc_kr_malloc(((mc_kr_nalloc/2) - 1) * sizeof(mc_kr_Header));
-	core[1] = mc_kr_realloc(core[0], ((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
-	CU_ASSERT(core[0] == core[1]);
-	stats = mc_kr_getmallstats();
-	CU_ASSERT(stats.allocationCount == 1);
-	CU_ASSERT(stats.memoryAllocated == ((mc_kr_nalloc) - 1) * sizeof(mc_kr_Header));
-	// shouldn't need anymore heap yet 
-	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
-	// allocator should be able to allocate exactly the right sized block since 
-	// the request is terms of mc_kr_nalloc
-	CU_ASSERT(stats.allocatedSpace == ((mc_kr_nalloc) - 1 ) * sizeof(mc_kr_Header));
+	mc_kr_releaseFreeList();
 
 	return;
 }
