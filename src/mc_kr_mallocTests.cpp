@@ -190,9 +190,14 @@ void unit_mc_kr_realloc(void)
 	void *core[4], *oldCore;
 	size_t 			nallocSize = ((MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE))) / (ALIGN_COUNT * ALIGN_SIZE));
 
+cout << "core[0]" << endl;
 	core[0] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
+cout << "core[1]" << endl;
+mc_kr_PrintFreelist();
 	core[1] = mc_kr_realloc(core[0], (nallocSize - 1) * sizeof(mc_kr_Header));
+cout << "free" << endl;
 	mc_kr_free(core[1]);
+cout << "release" << endl;
 	mc_kr_releaseFreeList();
 
 	return;
