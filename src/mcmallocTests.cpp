@@ -16,7 +16,7 @@
 
 using namespace std;
 
-static uint64_t mc_utilsSuite_vsize;
+static ssize_t mc_utilsSuite_vsize;
 
 #ifdef HAVE_CUNIT_CUNIT_H
 int init_mc_utilsSuite(void)
