@@ -40,11 +40,9 @@ int main(int argc, char *argv[], char *envp[])
 	if((mc_kr_callocSuite = CU_add_suite("mc_kr_callocSuite", init_mc_kr_callocSuite, clean_mc_kr_callocSuite)) == NULL) goto error1;
 	if((CU_add_test(mc_kr_callocSuite, "mc_kr_calloc", unit_mc_kr_calloc)) == NULL) goto error1;
 
-// need to work out problems with free() first
-/* 
 	if((mc_kr_reallocSuite = CU_add_suite("mc_kr_reallocSuite", init_mc_kr_reallocSuite, clean_mc_kr_reallocSuite)) == NULL) goto error1;
 	if((CU_add_test(mc_kr_reallocSuite, "mc_kr_realloc", unit_mc_kr_realloc)) == NULL) goto error1;
-*/
+
 	if((mc_kr_mallstatsSuite = CU_add_suite("mc_kr_mallstatsSuite", init_mc_kr_mallstatsSuite, clean_mc_kr_mallstatsSuite)) == NULL) goto error1;
 	if((CU_add_test(mc_kr_mallstatsSuite, "mc_kr_mallstats", unit_mc_kr_mallstats)) == NULL) goto error1;
 
