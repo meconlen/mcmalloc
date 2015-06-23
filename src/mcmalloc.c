@@ -34,7 +34,7 @@ uint64_t u64gcd(uint64_t a, uint64_t b)
 
 // getvsize
 
-int64_t mc_get_vsize(void)
+ssize_t mc_get_vsize(void)
 {
 	int64_t 				vsize = -1;
 #if defined(__APPLE__)

@@ -85,7 +85,7 @@ extern "C" {
 
 // utilities 
 
-int64_t mc_get_vsize(void);
+ssize_t mc_get_vsize(void);
 
 
 // C allocator
