@@ -1,14 +1,22 @@
 #include <config.h>
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>      // XintY_t
-#include <stddef.h>     // NULL
-#include <string.h>        // strlen()
-#include <unistd.h>     // brk(), sbrk()
 
-#include <sys/mman.h>      // mmap()
-#include <sys/resource.h>  // getrusage()
-#include <sys/time.h>      // getrusage()
-#include <sys/types.h>     // size_t
+#include "mcmalloc.h"
+
+#include <algorithm>
+#include <iostream> 
+#include <string>
+#include <vector>
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>		// XintY_t
+#include <stddef.h>			// NULL
+#include <string.h>			// strlen()
+#include <unistd.h>			// brk(), sbrk()
+
+#include <sys/mman.h>		// mmap()
+#include <sys/resource.h>	// getrusage()
+#include <sys/time.h>		// getrusage()
+#include <sys/types.h>		// size_t
 
 // for getting vsize
 #if defined(__APPLE__)
@@ -21,7 +29,7 @@
 	#include <CUnit/Basic.h>
 #endif
 
-#include "mcmalloc.h"
+using namespace std;
 
 #ifdef HAVE_CUNIT_CUNIT_H
 
@@ -39,9 +47,9 @@ int clean_mc_kr_mallocSuite(void)
 	if(mc_kr_mallocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("mc_kr_mallocSuite: start = %" PRIu64 "\n", mc_kr_mallocSuite_vsize);
-	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
-	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_mallocSuite_vsize);
+	cout << "mc_kr_mallocSuite: start = " << mc_kr_mallocSuite_vsize << endl;
+	cout << "\t end = " << mc_get_vsize() << endl;
+	cout << "\t diff = " << mc_get_vsize() - mc_kr_mallocSuite_vsize << endl;
 	return 1;
 }
 
@@ -57,20 +65,27 @@ void mc_kr_assertFreelist(size_t size, uint64_t count)
 		current = current->s.ptr;
 	} while(current != &mc_kr_base);
 	CU_ASSERT(totalSize == size);
-	CU_ASSERT(freeCount == count);      
+	CU_ASSERT(freeCount == count);
+	if(freeCount != count) {
+		cout << "freeCount = " << freeCount << ", count = " << count << endl;
+		mc_kr_PrintFreelist();
+	}      
 	return;
 }
 
 void unit_mc_kr_malloc(void)
 {
-	char				*testPtr[4];
-	mc_kr_Header	*current;
-	
-	size_t			totalSize = 0;
-	uint64_t			freeCount = 0;
+	void							*testPtr[4];
+	vector<int_fast16_t>		freeOrder = {0, 1, 2, 3},
+									allocOrder = {0, 1, 2, 3};
 
-	void				*ptr[128];
-	uint64_t			i;
+	mc_kr_Header				*current;
+	
+	size_t						totalSize = 0;
+	uint64_t						freeCount = 0;
+
+	void							*ptr[128];
+	uint64_t						i;
 
 	// it won't be set when we start so we compute it again
 	size_t 			nallocSize = ((MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE))) / (ALIGN_COUNT * ALIGN_SIZE));
@@ -78,7 +93,7 @@ void unit_mc_kr_malloc(void)
 	CU_ASSERT_PTR_NULL(mc_kr_freep);
 
 	// allocate something that will fill one page (with header)
-	testPtr[0] = (char *)mc_kr_malloc((nallocSize - 1) * sizeof(mc_kr_Header));
+	testPtr[0] = mc_kr_malloc((nallocSize - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[0] != NULL);
 	CU_ASSERT(mc_kr_freep == &mc_kr_base);
 	CU_ASSERT(mc_kr_freep->s.ptr == &mc_kr_base);
@@ -90,12 +105,12 @@ void unit_mc_kr_malloc(void)
 	mc_kr_assertFreelist(nallocSize, 2);
 
 	// Allocate half the block that's now on the free list
-	testPtr[0] = (char *)mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
+	testPtr[0] = mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[0] != NULL);
 	mc_kr_assertFreelist((nallocSize/2), 2);
 
 	// Allocate the other half of the block 
-	testPtr[1] = (char *)mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
+	testPtr[1] = mc_kr_malloc((nallocSize/2 - 1) * sizeof(mc_kr_Header));
 	CU_ASSERT_FATAL(testPtr[1] != NULL);
 	mc_kr_assertFreelist(0, 1);
 
@@ -106,63 +121,41 @@ void unit_mc_kr_malloc(void)
 	// free the second block
 	mc_kr_free(testPtr[1]);
 	mc_kr_assertFreelist(nallocSize, 2);
-
-	// Allocate group of four for coalescing tests
-	for(i=0; i<4; i++) {
-		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
-		CU_ASSERT_FATAL(testPtr[i] != NULL);
-	}
-	// Verify the free list is empty
-	mc_kr_assertFreelist(0, 1);
-
-	// Allocations are from the end of the free block so they will be 
-	// {3, 2, 1, 0} in memory
-
-	// coalescing to the next region 
-	mc_kr_free(testPtr[0]);
-	mc_kr_free(testPtr[1]);
-	mc_kr_assertFreelist((nallocSize/2), 2);
-
-	// coalescing to the previous and next region
-	mc_kr_free(testPtr[3]);
-	mc_kr_free(testPtr[2]);
-	mc_kr_assertFreelist((nallocSize), 2);
-
-	// need to consider that mmap may be allocated top down (linux) or bottom up (OS X)
-	// need to test malloc/free in various configurations (though we should have symmetry)
-	// allocations from within a block are allocated high to low (top down, back to front)
-	
-	// Allocate group of four for coalescing tests
-	for(i=0; i<4; i++) {
-		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
-		CU_ASSERT_FATAL(testPtr[i] != NULL);
-	}
-	// Verify the free list is empty
-	mc_kr_assertFreelist(0, 1);
-
-	// coalescing to the previous region
-	mc_kr_free(testPtr[3]);
-	mc_kr_free(testPtr[2]);
-	mc_kr_assertFreelist((nallocSize/2), 2);
-
-	// coalescing to the next and previous region
-	mc_kr_free(testPtr[0]);
-	mc_kr_free(testPtr[1]);
-	mc_kr_assertFreelist((nallocSize), 2);
-
-	// Allocate group of four for coalescing tests
-	for(i=0; i<4; i++) {
-		testPtr[i] = (char *)mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
-		CU_ASSERT_FATAL(testPtr[i] != NULL);
-	}
-	// Verify the free list is empty
-	mc_kr_assertFreelist(0, 1);
-	for(i=0; i<4; i++) {
-		mc_kr_free(testPtr[i]);
-	}
-
 	mc_kr_releaseFreeList();
 
+	// test each order of allocation/deallocation of four blocks from a single page 
+	// force the ordering 
+	sort(freeOrder.begin(), freeOrder.end());
+	sort(allocOrder.begin(), allocOrder.end());
+
+	do {
+		// alloc in order 
+		for(auto i : allocOrder) {
+			testPtr[i] = mc_kr_malloc((nallocSize/4 - 1) * sizeof(mc_kr_Header));
+		}
+		mc_kr_free(testPtr[freeOrder[0]]);
+		mc_kr_assertFreelist(nallocSize/4, 2);
+		mc_kr_free(testPtr[freeOrder[1]]);
+		// [0] and [1] are adjacent 
+		// they should coalesce 
+		if(freeOrder[0] == freeOrder[1]+1 || freeOrder[0] == freeOrder[1]-1) {
+			mc_kr_assertFreelist(nallocSize/2, 2);
+		} else {
+			mc_kr_assertFreelist(nallocSize/2, 3);
+		}
+
+		mc_kr_free(testPtr[freeOrder[2]]);
+		if(freeOrder[3] == 0 || freeOrder[3] == 3) {
+			// the three freed objects are together
+			mc_kr_assertFreelist(3*nallocSize/4, 2);
+		} else {
+			// the three freed objects are not together
+			mc_kr_assertFreelist(3*nallocSize/4, 3);
+		}
+		mc_kr_free(testPtr[freeOrder[3]]);
+		mc_kr_assertFreelist(nallocSize, 2);
+	} while(next_permutation(freeOrder.begin(), freeOrder.end()));
+	mc_kr_releaseFreeList();
 
 	return;
 }
@@ -181,9 +174,9 @@ int clean_mc_kr_reallocSuite(void)
 	if(mc_kr_reallocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("mc_kr_reallocSuite: start = %" PRIu64 "\n", mc_kr_reallocSuite_vsize);
-	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
-	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_reallocSuite_vsize);
+	cout << "mc_kr_reallocSuite: start = " << mc_kr_reallocSuite_vsize << endl;
+	cout << "\t end = " << mc_get_vsize() << endl;
+	cout << "\t diff = " << mc_get_vsize() - mc_kr_reallocSuite_vsize << endl;
 	return 1;
 }
 
@@ -219,9 +212,9 @@ int clean_mc_kr_callocSuite(void)
 	if(mc_kr_callocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("\n mc_kr_callocSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
-	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
-	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_callocSuite_vsize);
+	cout << "\n mc_kr_callocSuite:\n \t start = " << mc_kr_callocSuite_vsize << endl;
+	cout << "\t end = " << mc_get_vsize() << endl;
+	cout << "\t diff = " << mc_get_vsize() - mc_kr_callocSuite_vsize << endl;
 	return 1;
 }
 
@@ -256,9 +249,9 @@ int   clean_mc_kr_mallstatsSuite(void)
 	if(mc_kr_callocSuite_vsize == mc_get_vsize()) {
 		return 0;
 	}
-	printf("\n mc_kr_mallstatsSuite:\n \t start = %" PRIu64 "\n", mc_kr_callocSuite_vsize);
-	printf("\t end = %" PRIu64 "\n", mc_get_vsize());
-	printf("\t diff = %" PRIu64 "\n", mc_get_vsize() - mc_kr_callocSuite_vsize);
+	cout << endl << "mc_kr_mllocSuite:\n \t start = " << mc_kr_callocSuite_vsize << endl;
+	cout << "\t end = " << mc_get_vsize() << endl;
+	cout << "\t diff = " << mc_get_vsize() - mc_kr_callocSuite_vsize << endl;
 	return 1;
 }
 
@@ -273,12 +266,12 @@ void  unit_mc_kr_mallstats(void)
 	CU_ASSERT(stats.allocationCount == 1);
 	CU_ASSERT(stats.memoryAllocated == (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
 	if(stats.memoryAllocated != (mc_kr_nalloc - 1) * sizeof(mc_kr_Header)) {
-		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
+		std::cout << endl << "stats.memoryAllocated = " << stats.memoryAllocated << " expected " << (mc_kr_nalloc - 1) * sizeof(mc_kr_Header) << endl;
 	}
 	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
 	CU_ASSERT(stats.allocatedSpace == (mc_kr_nalloc - 1) * sizeof(mc_kr_Header));
 	if(stats.allocatedSpace != (mc_kr_nalloc - 1) * sizeof(mc_kr_Header)) {
-		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, mc_kr_nalloc * sizeof(mc_kr_Header));
+		cout << endl << "stats.allocatedSpace = " << stats.allocatedSpace << " expected = " << mc_kr_nalloc * sizeof(mc_kr_Header) << endl;
 	}
 
 	// free the block 
@@ -287,12 +280,12 @@ void  unit_mc_kr_mallstats(void)
 	CU_ASSERT(stats.allocationCount == 0);
 	CU_ASSERT(stats.memoryAllocated == 0);
 	if(stats.memoryAllocated != 0) {
-		printf("\nstats.memoryAllocated = %lu, expected %lu\n", stats.memoryAllocated, 0L);
+		cout << endl << "stats.memoryAllocated = " << stats.memoryAllocated << ", expected 0" << endl;
 	}
 	CU_ASSERT(stats.heapAllocated == mc_kr_nalloc * sizeof(mc_kr_Header));
 	CU_ASSERT(stats.allocatedSpace == 0);
 	if(stats.allocatedSpace != 0) {
-		printf("\nstats.allocatedSpace = %lu, expected = %lu\n", stats.allocatedSpace, 0L);
+		cout << endl << "stats.allocatedSpace = " << stats.allocatedSpace << " expected = 0" << endl;
 	}
 
 
@@ -330,15 +323,14 @@ void  unit_mc_kr_mallstats(void)
 	// is it one header size or 
 	CU_ASSERT(stats.allocatedSpace == sizeof(mc_kr_Header));
 	if(stats.allocatedSpace != sizeof(mc_kr_Header)) {
-		printf("stats.allocatedSpace = %ld, expected %ld\n", stats.allocatedSpace, sizeof(mc_kr_Header));
+		cout << "stats.allocatedSpace = " <<  stats.allocatedSpace << ", expected " <<  sizeof(mc_kr_Header) << endl;
 	}
 	// check that we allocate some multiple of page size (because apparently we weren't)
 	CU_ASSERT(stats.heapAllocated % MCMALLOC_PAGE_SIZE == 0);
 	if(stats.heapAllocated % MCMALLOC_PAGE_SIZE != 0) {
-		printf("\nexpected a multiple of %ld, got %ld = %ld (mod %ld)\n", MCMALLOC_PAGE_SIZE, stats.heapAllocated, stats.heapAllocated % MCMALLOC_PAGE_SIZE, MCMALLOC_PAGE_SIZE);
-		printf("\t mc_kr_nalloc = %lu\n", mc_kr_nalloc);
-		printf("\t ALIGN_COUNT = %d\n", ALIGN_COUNT);
-
+		cout << endl << "expected a multiple of " << MCMALLOC_PAGE_SIZE << ", got " << stats.heapAllocated << "  = " << stats.heapAllocated % MCMALLOC_PAGE_SIZE << " (mod " << MCMALLOC_PAGE_SIZE << ")" << endl; 		
+		cout << "\t mc_kr_nalloc = " << mc_kr_nalloc << endl;
+		cout << "\t ALIGN_COUNT = " <<  ALIGN_COUNT << endl;
 	}
 	mc_kr_free(core[0]);
 
