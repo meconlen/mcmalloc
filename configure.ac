@@ -52,6 +52,8 @@ AC_CHECK_HEADERS([malloc/malloc.h])
 AC_FUNC_MMAP
 AC_CHECK_FUNC(sbrk)
 
+AC_CHECK_FUNC(malloc_stats)
+
 AC_CHECK_FUNC(getenv)
 AC_CHECK_FUNC(secure_getenv)
 
