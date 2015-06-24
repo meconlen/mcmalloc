@@ -42,18 +42,18 @@ int main(int argc, char *argv[])
 		if(ptrList[e] == nullptr) {
 			l = length(g);
 			ptrList[e] = mc_kr_malloc(l);
-			cout << "allocate: " << e << ": " << ptrList[e] << ", l = " << l << endl;
+			cout << "allocate(" << i << "): " << e << ": " << ptrList[e] << ", l = " << l << endl;
 		} else {
 			mc_kr_free(ptrList[e]);
 			ptrList[e] = nullptr;
-			cout << "free: " << e << ": " << ptrList[e] << endl;
+			cout << "free(" << i << "): " << e << ": " << ptrList[e] << endl;
 		}
 	}
 	mc_kr_malloc_stats();
 	for(size_t i = 0; i < vectorLength; i++) {
 		if(ptrList[i] != nullptr) {
 			mc_kr_free(ptrList[i]);
-			cout << "free: " << i << ": " << ptrList[i] << endl;
+			// cout << "free(" << i << "): " << i << ": " << ptrList[i] << endl;
 		}
 	}
 	mc_kr_PrintFreelist();
