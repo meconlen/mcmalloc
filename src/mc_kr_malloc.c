@@ -119,7 +119,11 @@ inline static mc_kr_Header *mc_kr_morecore(size_t nu)
 	mc_kr_Header	*up;
 
 // printf("mc_kr_morecore(%lu), ps = %ld, na = %ld\n", nu, mc_kr_pageSize, mc_kr_nalloc);
-	if(nu < mc_kr_nalloc) nu = mc_kr_nalloc;
+
+	// what we really want is to round up to a multiple of mc_kr_nalloc
+
+	nu = (nu / mc_kr_nalloc + ((nu % mc_kr_nalloc) == 0 ? 0 : 1)) * mc_kr_nalloc;
+
 	// get more space and return NULL if unable
 	if((cp = get_morecore(nu*sizeof(mc_kr_Header))) == NULL) return NULL;
 	up = (mc_kr_Header *)cp;
