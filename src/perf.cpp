@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	mt19937									g(rd());
 	size_t									e, l;
 
-	size_t	vectorLength = 1000, maxAllocation = 1024*1024, iterationCount = 1000000;
+	size_t	vectorLength = 1000, lambda = 48, iterationCount = 1000000;
 	int 		c;
 
 	while((c = getopt(argc, argv, "c:l:a:")) != -1) {
@@ -28,12 +28,13 @@ int main(int argc, char *argv[])
 				vectorLength = atol(optarg);
 				break;
 			case 	'a': 
-				maxAllocation = atol(optarg);
+				lambda = atol(optarg);
 				break;
 		}
 	}
 
-	uniform_int_distribution<size_t>	length(1, maxAllocation);
+	// uniform_int_distribution<size_t>	length(1, maxAllocation);
+	poisson_distribution<size_t> length(lambda);
 	uniform_int_distribution<size_t>	element(0, vectorLength - 1);
 
 	ptrList.assign(vectorLength, nullptr);
@@ -42,11 +43,11 @@ int main(int argc, char *argv[])
 		if(ptrList[e] == nullptr) {
 			l = length(g);
 			ptrList[e] = malloc(l);
-			cout << "allocate(" << i << "): " << e << ": " << ptrList[e] << ", l = " << l << endl;
+			// cout << "allocate(" << i << "): " << e << ": " << ptrList[e] << ", l = " << l << endl;
 		} else {
 			free(ptrList[e]);
 			ptrList[e] = nullptr;
-			cout << "free(" << i << "): " << e << ": " << ptrList[e] << endl;
+			// cout << "free(" << i << "): " << e << ": " << ptrList[e] << endl;
 		}
 	}
 #if defined(HAVE_MALLOC_STATS)
