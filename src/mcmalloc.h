@@ -40,12 +40,12 @@ typedef struct mc_mallstats mallstats;
 #define MC_ALLOCATOR_KR 1
 
 #ifndef USE_MC_PREFIX
-	#define mc_calloc calloc
-	#define mc_malloc    malloc 
-	#define mc_getmallstats    getmallstats
-	#define mc_malloc_stats malloc_stats
-	#define mc_realloc   realloc
-	#define mc_free   mcfree
+	#define mc_calloc				calloc
+	#define mc_malloc 			malloc 
+	#define mc_getmallstats		getmallstats
+	#define mc_malloc_stats		malloc_stats
+	#define mc_realloc			realloc
+	#define mc_free				free
 #endif
 
 // utilities the allocators call
