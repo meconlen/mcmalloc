@@ -3,5 +3,6 @@ Makefile
 Makefile.in
 test
 perf
+pagesize
 *.a
 *.o
