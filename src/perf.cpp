@@ -16,7 +16,8 @@ int main(int argc, char *argv[])
 	mt19937									g(rd());
 	size_t									e, l;
 
-	size_t	c, vectorLength = 1000, maxAllocation = 1024*1024, iterationCount = 1000000;
+	size_t	vectorLength = 1000, maxAllocation = 1024*1024, iterationCount = 1000000;
+	int 		c;
 
 	while((c = getopt(argc, argv, "c:l:a:")) != -1) {
 		switch(c) {
