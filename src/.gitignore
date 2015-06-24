@@ -1,6 +1,7 @@
-.deps 
+.deps/
 Makefile
 Makefile.in
 test
+perf
 *.a
 *.o

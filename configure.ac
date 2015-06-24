@@ -11,8 +11,8 @@ AC_PROG_RANLIB
 AM_PROG_AR
 AC_HEADER_STDC
 
-CPPFLAGS="$CPPFLAGS -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
-CCFLAGS="$CCFLAGS"
+CPPFLAGS="$CPPFLAGS"
+CFLAGS="$CFLAGS -std=c99 -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
 CXXFLAGS="$CXXFLAGS --std=c++0x -Wall -Werror -Wpedantic -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable"
 LDFLAGS="$LDFLAGS"
 
@@ -24,7 +24,8 @@ case $host_os in
 		LDFLAGS="$LDFLAGS -L/opt/local/lib"
 	;;
 	linux*)
-		# Do something specific for linux
+		# configure won't find getpagesize without this	
+		CPPFLAGS="$CPPFLAGS -D_BSD_SOURCE=1"
 	;;
 	*BSD*)
 		# Do something specific for BSD
@@ -41,17 +42,18 @@ AC_SEARCH_LIBS([CU_initialize_registry], [cunit], [
 ], [ ])
 
 
+AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_HEADERS([stdio.h])
 AC_CHECK_HEADERS([stdlib.h])
-AC_CHECK_HEADERS([malloc.h])
+AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_HEADERS([sys/malloc.h])
 AC_CHECK_HEADERS([malloc/malloc.h])
 
 AC_FUNC_MMAP
-AC_CHECK_FUNCS(sbrk)
+AC_CHECK_FUNC(sbrk)
 
-AC_CHECK_FUNCS(getenv)
-AC_CHECK_FUNCS(secure_getenv)
+AC_CHECK_FUNC(getenv)
+AC_CHECK_FUNC(secure_getenv)
 
 AC_CHECK_TYPES([uint64_t], [
 	AC_CHECK_SIZEOF([uint64_t])

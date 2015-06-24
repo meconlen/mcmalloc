@@ -1,8 +1,9 @@
 #include <config.h>
-#define __STDC_FORMAT_MACROS
+#include "mcmalloc.h"
+
 #include <inttypes.h>		// XintY_t
 #include <stddef.h> 		// NULL
-#include <string.h>			// strlen()
+#include <string.h>		// strlen()
 #include <unistd.h> 		// brk(), sbrk()
 
 #include <sys/mman.h> 		// mmap()
@@ -17,15 +18,23 @@
 #include <mach/mach_traps.h>
 #endif
 
-#ifdef HAVE_CUNIT_CUNIT_H
-	#include <CUnit/Basic.h>
-#endif
 
-#include "mcmalloc.h"
+// how is this not standard? 
+// might as well go big or go home 
+uint64_t u64gcd(uint64_t a, uint64_t b)
+{
+	uint64_t    r, i;
+	while(b!=0) {
+		r = a % b;
+		a = b;
+		b = r;
+	}
+	return a;
+}
 
 // getvsize
 
-int64_t mc_get_vsize(void)
+ssize_t mc_get_vsize(void)
 {
 	int64_t 				vsize = -1;
 #if defined(__APPLE__)
@@ -33,8 +42,8 @@ int64_t mc_get_vsize(void)
 	struct task_basic_info 	t_info;
 	mach_msg_type_number_t 	t_info_count = TASK_BASIC_INFO_COUNT;
 
-    if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count))	return -1;
-    vsize  = t_info.virtual_size;	
+	 if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count))	return -1;
+	 vsize  = t_info.virtual_size;	
 #endif
 	return vsize;
 }
@@ -99,6 +108,17 @@ mallstats mc_getmallstats(void)
 	return default_mallstats;
 }
 
+void mc_malloc_stats(void)
+{
+	switch(mc_allocator) {
+		case  MC_ALLOCATOR_KR:
+			mc_kr_malloc_stats();
+			return;
+	}
+
+	return;
+}
+
 void *mc_realloc(void *ptr, size_t size)
 {
 	switch(mc_allocator) {
@@ -112,6 +132,7 @@ void mc_free(void *ptr)
 	switch(mc_allocator) {
 		case 	MC_ALLOCATOR_KR:
 			mc_kr_free(ptr);
+			return;
 	}
 	return;
 }
