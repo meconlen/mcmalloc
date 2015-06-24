@@ -103,7 +103,7 @@ void mc_kr_PrintFreelist(void)
 
 	printf("Freelist: \n");
 	do {
-		printf("%p: (%lu, %p, %p)\n", (void *)current, current->s.size, (void *)current->s.ptr, (void *)(current+1));
+		printf("[%p, %p): (%lu, %p, %p)\n", (void *)current, (void *)((char *)current + current->s.size * sizeof(mc_kr_Header)), current->s.size, (void *)current->s.ptr, (void *)(current+1));
 		current = current->s.ptr;
 	} while(current != &mc_kr_base);
 }
@@ -151,7 +151,7 @@ void *mc_kr_calloc(size_t count, size_t size)
 void *mc_kr_malloc(size_t nbytes)
 {
 	mc_kr_Header 	*p, *prevp;
-	uint64_t 		nunits;
+	size_t	 		nunits;
 	uint64_t 		gcd;
 
 // printf("malloc(%lu)\n", nbytes);
@@ -253,7 +253,8 @@ void *mc_kr_realloc(void *ptr, size_t size)
 		// we looped all the way around
 		newPtr = mc_kr_malloc(size);
 		if(newPtr == NULL) return newPtr;
-		memcpy(newPtr, ptr, oldSpace->s.size * sizeof(mc_kr_Header));
+
+		memcpy(newPtr, ptr, oldSpace->s.size * (sizeof(mc_kr_Header) - 1));
 		mc_kr_free(ptr);
 		return newPtr;
 	}
