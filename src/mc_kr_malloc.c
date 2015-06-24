@@ -241,7 +241,7 @@ void *mc_kr_realloc(void *ptr, size_t size)
 				last->s.ptr = current->s.ptr;				// remove current from the free list
 				if(oldSpace->s.size >= newUnits) { 	// we are done
 					oldSpace->s.bytes = size;
-					return oldSpace;
+					return oldSpace+1;
 				}
 				// we coalesced but need more, start over 
 				last = &mc_kr_base;

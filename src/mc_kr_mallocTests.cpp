@@ -187,14 +187,36 @@ int clean_mc_kr_reallocSuite(void)
 
 void unit_mc_kr_realloc(void)
 {
-	void *core[4], *oldCore;
+	void 				*core[4], *oldCore;
 	size_t 			nallocSize = ((MCMALLOC_PAGE_SIZE * (ALIGN_COUNT * ALIGN_SIZE) / u64gcd(MCMALLOC_PAGE_SIZE, (ALIGN_COUNT * ALIGN_SIZE))) / (ALIGN_COUNT * ALIGN_SIZE));
 
 	core[0] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
+	for(size_t i = 0; i < ((nallocSize/2) - 1) * sizeof(mc_kr_Header); i++) {
+		*(char *)core[0] = 0;
+	}
 	core[1] = mc_kr_realloc(core[0], (nallocSize - 1) * sizeof(mc_kr_Header));
+	// core[1] != core[0]
+	for(size_t i = 0; i < ((nallocSize/2) - 1) * sizeof(mc_kr_Header); i++) {
+		CU_ASSERT(*(char *)core[0] == 0);
+	}
 	mc_kr_free(core[1]);
 	mc_kr_releaseFreeList();
 
+	// test that realloc coalesces properly. 
+	// gets block and allocates from end
+	core[0] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
+	// allocates first chunk
+	core[1] = mc_kr_malloc(((nallocSize/2) - 1) * sizeof(mc_kr_Header));
+	// frees the end block
+	mc_kr_free(core[0]);
+	// expands the first chunk into the rest of the block
+	core[0] = mc_kr_realloc(core[1], (nallocSize - 1) * sizeof(mc_kr_Header));
+	CU_ASSERT(core[0] == core[1]);
+	if(core[0] != core[1]) {
+		cout << core[0] << " should be " << core[1] << endl;
+	}
+	mc_kr_free(core[1]);
+	mc_kr_releaseFreeList();
 	return;
 }
 

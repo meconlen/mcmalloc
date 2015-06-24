@@ -43,6 +43,7 @@ typedef struct mc_mallstats mallstats;
 	#define mc_calloc calloc
 	#define mc_malloc    malloc 
 	#define mc_getmallstats    getmallstats
+	#define mc_malloc_stats malloc_stats
 	#define mc_realloc   realloc
 	#define mc_free   mcfree
 #endif
