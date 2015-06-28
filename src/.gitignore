@@ -9,3 +9,4 @@ pagesize
 *.a
 *.o
 trace.out
+.libs/
