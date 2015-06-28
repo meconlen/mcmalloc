@@ -17,6 +17,7 @@ int main(int argc, char *argv[], char *envp[])
 
 #ifdef HAVE_CUNIT_CUNIT_H
 	CU_pSuite	mc_utilsSuite = NULL,
+					mc_traceSuite = NULL,
 					mc_kr_mallocSuite = NULL,
 					mc_kr_reallocSuite = NULL,
 					mc_kr_callocSuite = NULL,
@@ -45,6 +46,9 @@ int main(int argc, char *argv[], char *envp[])
 
 	if((mc_kr_mallstatsSuite = CU_add_suite("mc_kr_mallstatsSuite", init_mc_kr_mallstatsSuite, clean_mc_kr_mallstatsSuite)) == NULL) goto error1;
 	if((CU_add_test(mc_kr_mallstatsSuite, "mc_kr_mallstats", unit_mc_kr_mallstats)) == NULL) goto error1;
+
+	if((mc_traceSuite = CU_add_suite("mc_traceSuite", init_mc_trace, clean_mc_trace)) == NULL) goto error1;
+	if((CU_add_test(mc_traceSuite, "unit_mc_trace", unit_mc_trace)) == NULL) goto error1;
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
