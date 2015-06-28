@@ -1,14 +1,17 @@
 AC_PREREQ(2.61)
-AC_INIT([mcalloc], [0.2], [mike@conlen.org])
+AC_INIT([mcalloc], [0.3], [mike@conlen.org])
 AC_CONFIG_SRCDIR([src/test.cpp])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_HOST
+AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CPP
-AC_PROG_RANLIB
 AM_PROG_AR
+LT_INIT
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_HEADER_STDC
 
 CPPFLAGS="$CPPFLAGS"
