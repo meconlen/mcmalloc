@@ -24,3 +24,13 @@ configure
 stamp-h1
 config.h.in~
 libtool
+ar-lib
+compile
+config.guess
+config.sub
+depcomp
+install-sh
+libtool
+ltmain.sh
+m4/*
+missing
