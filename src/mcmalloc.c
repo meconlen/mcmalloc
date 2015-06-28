@@ -105,11 +105,17 @@ void mc_configure(void)
 
 void *mc_calloc(size_t count, size_t size)
 {
+	void 	*p;
+
 	if(mc_config.allocator == 0) {
 		mc_configure();
 	}	
 	if(mc_config.trace != NULL) {
-		fprintf(mc_config.trace, "calloc: %lu\n", size);
+		switch(mc_config.allocator) {
+			case 	MC_ALLOCATOR_KR:
+				p = mc_kr_calloc(count, size);
+				fprintf(mc_config.trace, "calloc(%lu, %lu): %p\n", count, size, p);
+		}
 	}
 	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
@@ -171,15 +177,22 @@ void mc_malloc_stats(void)
 
 void *mc_realloc(void *ptr, size_t size)
 {
+	void 	*p;
+
 	if(mc_config.allocator == 0) {
 		mc_configure();
 	}
 	if(mc_config.trace != NULL) {
-		fprintf(mc_config.trace, "realloc: %lu\n", size);
+		switch(mc_config.allocator) {
+			case 	MC_ALLOCATOR_KR:
+				p = mc_kr_realloc(ptr, size);
+				break;
+		}
+		fprintf(mc_config.trace, "realloc(%p, %lu): %p\n", ptr, size, p);
 	}
 	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
-			return mc_kr_malloc(size);
+			return mc_kr_realloc(ptr, size);
 	}
 	return NULL;
 }
