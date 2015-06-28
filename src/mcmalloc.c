@@ -3,7 +3,9 @@
 
 #include <inttypes.h>		// XintY_t
 #include <stddef.h> 		// NULL
-#include <string.h>		// strlen()
+#include <stdio.h>			// fopen()
+#include <stdlib.h>			// getenv()
+#include <string.h>			// strlen()
 #include <unistd.h> 		// brk(), sbrk()
 
 #include <sys/mman.h> 		// mmap()
@@ -77,20 +79,62 @@ inline void *mmap_morecore(intptr_t incr)
 	return core;
 }
 
+malloc_config mc_config = {0, NULL};
 
-static int mc_allocator = MC_ALLOCATOR_KR;
+void mc_configure(void)
+{
+	char *a, *t;
+	a = getenv("MC_ALLOCATOR");
+	if(a == NULL) {
+		mc_config.allocator = MC_ALLOCATOR_DEFAULT;
+	}
+	if((strcmp(a, "MC_ALLOCATOR_KR")) == 0) {
+		mc_config.allocator = MC_ALLOCATOR_KR;
+	} else {
+		mc_config.allocator = MC_ALLOCATOR_DEFAULT;
+	}
+	t = getenv("MC_TRACE");
+	if(t == NULL) {
+		mc_config.trace = NULL;
+	} else {
+		if((mc_config.trace = fopen(t, "w")) == NULL) {
+			perror("fopen()");
+		}
+	}
+}
 
 void *mc_calloc(size_t count, size_t size)
 {
-	switch(mc_allocator) {
+	if(mc_config.allocator == 0) {
+		mc_configure();
+	}	
+	if(mc_config.trace != NULL) {
+		fprintf(mc_config.trace, "calloc: %lu\n", size);
+	}
+	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
 			return mc_kr_calloc(count, size);
 	}
 	return NULL;
 }
+
 void *mc_malloc(size_t size)
 {
-	switch(mc_allocator) {
+	void *p;
+
+	if(mc_config.allocator == 0) {
+		mc_configure();
+	}
+	if(mc_config.trace != NULL) {
+		switch(mc_config.allocator) {
+			case MC_ALLOCATOR_KR:
+				p = mc_kr_malloc(size);
+				break;
+		}
+		fprintf(mc_config.trace, "malloc(%lu): %p\n", size, p);
+		return p;
+	}
+	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
 			return mc_kr_malloc(size);
 	}
@@ -99,8 +143,11 @@ void *mc_malloc(size_t size)
 
 static mallstats default_mallstats = {0, 0, 0};
 mallstats mc_getmallstats(void)
-{
-	switch(mc_allocator) {
+{	
+	if(mc_config.allocator == 0) {
+		mc_configure();
+	}
+	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
 			return mc_kr_getmallstats();
 	}
@@ -110,7 +157,10 @@ mallstats mc_getmallstats(void)
 
 void mc_malloc_stats(void)
 {
-	switch(mc_allocator) {
+	if(mc_config.allocator == 0) {
+		mc_configure();
+	}	
+	switch(mc_config.allocator) {
 		case  MC_ALLOCATOR_KR:
 			mc_kr_malloc_stats();
 			return;
@@ -121,7 +171,13 @@ void mc_malloc_stats(void)
 
 void *mc_realloc(void *ptr, size_t size)
 {
-	switch(mc_allocator) {
+	if(mc_config.allocator == 0) {
+		mc_configure();
+	}
+	if(mc_config.trace != NULL) {
+		fprintf(mc_config.trace, "realloc: %lu\n", size);
+	}
+	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
 			return mc_kr_malloc(size);
 	}
@@ -129,7 +185,10 @@ void *mc_realloc(void *ptr, size_t size)
 }
 void mc_free(void *ptr)
 {
-	switch(mc_allocator) {
+	if(mc_config.trace != NULL) {
+		fprintf(mc_config.trace, "free(%p)\n", ptr);
+	}	
+	switch(mc_config.allocator) {
 		case 	MC_ALLOCATOR_KR:
 			mc_kr_free(ptr);
 			return;

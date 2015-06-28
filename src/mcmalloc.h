@@ -16,6 +16,7 @@
 #endif
 
 #include <stdint.h>     // uint64_t
+#include <stdio.h>		// FILE*
 #include <sys/types.h>  // size_t
 
 #ifdef __cplusplus
@@ -39,8 +40,11 @@ typedef struct mc_mallstats mallstats;
 
 #define MC_ALLOCATOR_KR 1
 
+// change the default here
+#define MC_ALLOCATOR_DEFAULT MC_ALLOCATOR_KR
+
 #ifndef USE_MC_PREFIX
-	#define mc_calloc				calloc
+	#define mc_calloc			calloc
 	#define mc_malloc 			malloc 
 	#define mc_getmallstats		getmallstats
 	#define mc_malloc_stats		malloc_stats
@@ -83,6 +87,17 @@ void *mmap_morecore(intptr_t incr);
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Configuration Structure 
+
+
+struct mc_malloc_config {
+	unsigned long 	allocator; 	// MC_ALLOCATOR
+	FILE 			*trace; 	// MC_TRACE
+};
+
+typedef struct mc_malloc_config malloc_config;
+extern malloc_config mc_config;
 
 // utilities 
 
